@@ -17,8 +17,8 @@ interface LeetCodeStats {
   ranking: number;
 }
 
-const GITHUB_USERNAME = "cypherx72";
-const LEETCODE_USERNAME = "obichitas";
+const GITHUB_USERNAME = "tavongachitambira";
+const LEETCODE_USERNAME = "tavongachitambira";
 
 const fallbackGH: GitHubStats = { totalCommits: 0, weeks: [] };
 const fallbackLC: LeetCodeStats = {
