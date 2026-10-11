@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { motion, useMotionValue, useSpring, useTransform, animate } from "framer-motion"
 import { useReducedMotion } from "framer-motion"
 
-const TEXT = "loading your experience."
+const TEXT = "Loading your experience."
 const MIN_MS = 1600 // minimum on-screen time so the fill is always readable
 const FILL_MS = 450 // final fill to 100% once ready
 const EXIT_S = 0.75
@@ -23,7 +23,13 @@ export function InitialLoader() {
 
   const target = useMotionValue(0) // 0..100
   const smooth = useSpring(target, { stiffness: 90, damping: 24, mass: 0.6 })
-  const clip = useTransform(smooth, (v) => `inset(${100 - v}% 0 0 0)`) // fills bottom -> top
+  // Maps 0% -> 100% progress into a 110% -> -10% clip path range
+const clip = useTransform(smooth, (v) => {
+  const top = 110 - (v * 1.2); // Scaled so that at 100%, top is -10%
+  return `inset(${top}% 0 -10% 0)`;
+}); // fills bottom -> top
+
+ 
   const ring = useTransform(smooth, (v) => v / 100) // ring progress 0..1
 
   useEffect(() => smooth.on("change", (v) => setPct(Math.round(v))), [smooth])
