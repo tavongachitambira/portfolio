@@ -1,0 +1,81 @@
+/* PALETTE: "Teal & Sand". Light = sand + deep-teal ink, dark = deep teal + sand.
+   Brand: teal #004741, sand #F0EDE4. Re-check WCAG AA (4.5:1) if you change a value. */
+
+:root {
+  --teal: #004741;
+  --sand: #f0ede4;
+
+  --page: oklch(0.95 0.012 92);
+  --clay-base: oklch(0.975 0.01 92);
+
+  --ink: oklch(0.24 0.05 190);
+  --ink-soft: oklch(0.4 0.055 190);
+  --ink-mute: oklch(0.45 0.05 190);
+
+  --brand: var(--teal);
+  --on-brand: oklch(0.96 0.012 92);
+
+  --tone-peach: oklch(0.93 0.04 70);
+  --tone-plum: oklch(0.91 0.04 190);
+  --tone-mauve: oklch(0.92 0.03 150);
+  --tone-rose: oklch(0.925 0.04 40);
+  --tone-apricot: oklch(0.95 0.06 90);
+
+  --glaze-peach: oklch(0.8 0.1 65);
+  --glaze-plum: oklch(0.58 0.09 190);
+  --glaze-mauve: oklch(0.74 0.08 155);
+  --glaze-rose: oklch(0.74 0.11 40);
+  --glaze-apricot: oklch(0.87 0.11 95);
+  --on-glaze: oklch(0.2 0.05 190);
+  --focus: oklch(0.45 0.09 190);
+
+  --clay-deep: oklch(0.28 0.06 190);
+  --clay-hi: 88%;
+  --clay-rim: 95%;
+  --clay-lo: 24%;
+  --clay-cast: 34%;
+  --clay-sheen: 45%;
+  --clay-fall: 9%;
+
+  --pool-1: 16%;
+  --pool-2: 22%;
+  --pool-3: 14%;
+}
+
+.dark {
+  --page: oklch(0.17 0.03 190);
+  --clay-base: oklch(0.27 0.04 190);
+
+  --ink: oklch(0.96 0.012 92);
+  --ink-soft: oklch(0.87 0.02 92);
+  --ink-mute: oklch(0.78 0.025 92);
+
+  --brand: var(--sand);
+  --on-brand: oklch(0.2 0.04 190);
+
+  --tone-peach: oklch(0.36 0.05 70);
+  --tone-plum: oklch(0.36 0.06 190);
+  --tone-mauve: oklch(0.35 0.05 150);
+  --tone-rose: oklch(0.36 0.06 40);
+  --tone-apricot: oklch(0.37 0.06 90);
+
+  --glaze-peach: oklch(0.84 0.1 65);
+  --glaze-plum: oklch(0.72 0.09 190);
+  --glaze-mauve: oklch(0.78 0.08 155);
+  --glaze-rose: oklch(0.78 0.11 40);
+  --glaze-apricot: oklch(0.88 0.11 95);
+  --on-glaze: oklch(0.2 0.05 190);
+  --focus: var(--sand);
+
+  --clay-deep: oklch(0.06 0.02 190);
+  --clay-hi: 14%;
+  --clay-rim: 24%;
+  --clay-lo: 70%;
+  --clay-cast: 80%;
+  --clay-sheen: 10%;
+  --clay-fall: 16%;
+
+  --pool-1: 24%;
+  --pool-2: 12%;
+  --pool-3: 6%;
+}

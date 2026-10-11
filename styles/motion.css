@@ -1,0 +1,75 @@
+/* Motion tokens + keyframes.
+   Rules: animate transform / opacity only. Motion either answers an action (press, hover)
+   or tells you something (status lamps). Nothing else moves, except the hero stage. */
+
+:root {
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in: cubic-bezier(0.3, 0, 0.8, 0.15);
+  /* a real damped spring (~12% overshoot), expressed as a CSS easing function */
+  --ease-spring: linear(0, 0.0194, 0.0714, 0.1477, 0.2404, 0.3428, 0.4491, 0.5545, 0.6554, 0.7488, 0.8327, 0.906, 0.968, 1.0187, 1.0585, 1.0881, 1.1085, 1.1207, 1.1259, 1.1254, 1.1203, 1.1117, 1.1007, 1.0882, 1.0748, 1.0614, 1.0484, 1.0362, 1.0251, 1.0153, 1.0069, 1, 0.9944, 0.9902, 0.9872, 0.9852, 0.9843, 0.9841, 0.9845, 0.9854, 0.9867, 0.9882, 0.9899, 0.9916, 1);
+  --dur-micro: 120ms;
+  --dur-std: 220ms;
+  --dur-emph: 420ms;
+}
+
+/* The hero's multiplier becomes a small connection core when its two disciplines split. */
+.x-orb__multiply, .x-orb__signal {
+  transition: opacity var(--dur-emph) var(--ease-out), transform var(--dur-emph) var(--ease-spring);
+}
+.x-orb__signal { opacity: 0; transform: scale(0.45) rotate(-90deg); }
+.x-orb--signal .x-orb__multiply { opacity: 0; transform: scale(0.45) rotate(90deg); }
+.x-orb--signal .x-orb__signal { opacity: 1; transform: scale(1) rotate(0); }
+
+/* hero stage: soft floating (different periods so the cards never sync up) */
+@keyframes float-a {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0.12em -0.5em; }
+}
+@keyframes float-b {
+  0%, 100% { translate: 0 0; }
+  50% { translate: -0.16em 0.45em; }
+}
+@keyframes float-c {
+  0%, 100% { translate: 0 0; rotate: 0deg; }
+  50% { translate: 0 -0.35em; rotate: 6deg; }
+}
+
+/* status lamps: one-time power-on, then the state's resting behaviour */
+@keyframes halo-boot {
+  0% { opacity: 0; transform: scale(0.55); }
+  38% { opacity: 1; transform: scale(1.18); }
+  100% { opacity: var(--halo, 0); transform: scale(1); }
+}
+@keyframes halo-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.12); }
+}
+
+/* "live" ring on the incident board mock */
+@keyframes ping-ring {
+  0% { opacity: 0.7; transform: scale(1); }
+  80%, 100% { opacity: 0; transform: scale(2.6); }
+}
+
+/* loss curve draws once */
+@keyframes draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+/* route loader waits 200ms before it shows, so fast navigations never flash it */
+@keyframes loader-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.001ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,163 @@
+"use client"
+
+import { useEffect, useRef, useState, type RefObject } from "react"
+import {
+  easeIn,
+  motion,
+  useMotionValue,
+  useSpring,
+  useTransform,
+  type MotionValue,
+} from "framer-motion"
+
+import { XOrb } from "@/components/clay/x-orb"
+import { BoardMock } from "@/components/hero/board-mock"
+import { NeuralViz } from "@/components/hero/neural-viz"
+import { stagePanes, type StagePane } from "@/lib/data/stage"
+import { cn } from "@/lib/utils"
+
+/* Web x ML: two stacked blocks pinned together by the screw.
+   Scrolling toward #about unscrews it:
+   - the screw spins counter-clockwise and lifts slightly, then vanishes
+   - the web block starts first: it swings left around the screw, falls
+     toward its heavy side, and drops out of the viewport
+   - the ML block follows a bit later: it swings right around the screw
+   Scrolling back up reverses everything. */
+
+const RADIUS = 36 // = --clay-r-lg
+const SECTION_ID = "profile"
+const TURNS = 3 // screw rotations over the scroll range
+
+export function HeroStage({
+  scrollContainerRef,
+  isMobile,
+}: {
+  scrollContainerRef: RefObject<HTMLDivElement | null>
+  isMobile: boolean
+}) {
+  const rootRef = useRef<HTMLDivElement>(null)
+  const scrollY = useMotionValue(0)
+  const [end, setEnd] = useState(700)
+
+  useEffect(() => {
+    const scroller = isMobile ? null : scrollContainerRef.current
+
+    const target: HTMLElement | Window = scroller ?? window
+    const read = () => (scroller ? scroller.scrollTop : window.scrollY)
+    const onScroll = () => scrollY.set(read())
+
+    function measure() {
+      const el = document.getElementById(SECTION_ID)
+      const base = scroller ? scroller.getBoundingClientRect().top : 0
+      const viewportHeight = scroller?.clientHeight ?? window.innerHeight
+      const top = el ? el.getBoundingClientRect().top - base + read() : viewportHeight
+      setEnd(Math.max(top - viewportHeight * 0.35, 200))
+    }
+
+    onScroll()
+    measure()
+    target.addEventListener("scroll", onScroll, { passive: true })
+    window.addEventListener("resize", measure)
+    return () => {
+      target.removeEventListener("scroll", onScroll)
+      window.removeEventListener("resize", measure)
+    }
+  }, [isMobile, scrollContainerRef, scrollY])
+
+  const raw = useTransform(scrollY, [0, end], [0, 1], { clamp: true })
+  const progress = useSpring(raw, { stiffness: 70, damping: 22, mass: 0.8 })
+
+  // screw: unscrews (counter-clockwise), rises a little, then disappears
+  const screwRotate = useTransform(progress, [0, 1], [0, -360 * TURNS])
+  const screwY = useTransform(progress, [0, 0.5, 1], [0, -10, -24])
+  const screwOpacity = useTransform(progress, [0, 0.75, 1], [1, 1, 0])
+
+  return (
+    <div ref={rootRef} className="relative mx-auto flex w-full max-w-[34rem] flex-col items-center justify-center overflow-hidden py-12 lg:h-screen lg:overflow-visible lg:py-0">
+      <Pane pane={stagePanes.web} progress={progress} />
+
+      {/* zero-height spacer sitting exactly on the seam between the blocks */}
+      <div aria-hidden className="relative z-20 h-0">
+        <div className="pointer-events-none absolute top-2.5 left-1/2 -translate-x-1/2 -translate-y-1/2">
+          <motion.div
+            style={{
+              rotate: screwRotate,
+              y: screwY,
+              opacity: screwOpacity,
+              transformOrigin: "center",
+              willChange: "transform",
+            }}
+          >
+            <XOrb mode="multiply" className="clay-lg size-[4.25rem]" />
+          </motion.div>
+        </div>
+      </div>
+
+      <Pane pane={stagePanes.ml} progress={progress} />
+    </div>
+  )
+}
+
+function Pane({
+  pane,
+  progress,
+}: {
+  pane: StagePane
+  progress: MotionValue<number>
+}) {
+  const isWeb = pane.side === "web"
+
+  // web goes first, ML follows later (staggered, not all at once)
+  const range = isWeb ? [0.1, 0.9] : [0.35, 1]
+  const t = useTransform(progress, range, [0, 1], { clamp: true, ease: easeIn })
+
+  // swing around the screw: web falls left (counter-clockwise), ML swings right (clockwise)
+  const rotate = useTransform(t, [0, 1], [0, isWeb ? -75 : 55])
+  const x = useTransform(t, [0, 1], ["0%", isWeb ? "-130%" : "70%"])
+  const y = useTransform(t, [0, 1], ["0%", isWeb ? "90%" : "60%"])
+
+  // stays solid while it's still visibly attached, vanishes as it leaves the viewport
+  const opacity = useTransform(t, [0, 0.55, 1], [1, 1, 0])
+  const blurPx = useTransform(t, [0, 0.55, 1], [0, 0, 8])
+  const filter = useTransform(blurPx, (v) => `blur(${v}px)`)
+
+  // transform-origin = the screw, in each pane's own coordinates.
+  // Panes are 84% wide of the container; the screw is at 50% of the container,
+  // on the seam between them. ML pane sits 16% in and 1.25rem (mt-5) below the seam.
+  const transformOrigin = isWeb
+    ? "59.5% calc(100% + 0.625rem)"
+    : "40.5% calc(-1.25rem + 0.625rem)"
+
+  return (
+    // pivot layer: owns only the swing/fall/fade, so the entry animation below is untouched
+    <motion.div
+      style={{ rotate, x, y, opacity, filter, transformOrigin }}
+      className={cn("relative w-[84%] min-w-0 will-change-transform", !isWeb && "mt-5 ml-auto")}
+    >
+      {/* the slab: entry animation unchanged */}
+      <motion.div
+        initial={{ opacity: 0, y: isWeb ? -72 : 72 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{ borderRadius: RADIUS }}
+        aria-hidden
+        className={cn(
+          "clay clay-lg max-lg:[--clay-elev:var(--e-md)] p-5",
+          isWeb
+            ? "[--clay-surface:var(--tone-rose)]"
+            : "[--clay-surface:var(--tone-plum)]",
+          isWeb ? "animate-float-a -rotate-2" : "animate-float-b rotate-[1.6deg]",
+        )}
+      >
+        <span className="block text-xl font-bold tracking-tight">{pane.title}</span>
+
+        {isWeb ? (
+          <BoardMock className="mt-3 text-[0.8rem]" />
+        ) : (
+          <div className="clay-well mt-3 p-3 [--clay-radius:var(--clay-r-sm)]">
+            <NeuralViz />
+          </div>
+        )}
+      </motion.div>
+    </motion.div>
+  )
+}

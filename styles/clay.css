@@ -1,0 +1,239 @@
+/* CLAY: the depth recipes.
+
+   Mental model (read once, then you can design with it):
+   1. ONE light source, top-left. Highlights sit top-left, shade falls bottom-right.
+   2. Shadows are tinted by the surface they fall on (mixed toward --clay-deep), never grey.
+   3. Depth encodes behaviour. Raised = you can press it. Inset (a "well") = it holds
+      information or input. Glow = it is live, or it is the call to action.
+   4. Size sets radius and elevation: small things are tight, big things are soft.
+
+   Every elevation list below has the SAME six layers in the SAME order
+   (cast, contact, rim, highlight, shade, glow), so the browser can interpolate
+   between them for hover lift and press without jumping. */
+
+:root {
+  --clay-r-xs: 0.75rem;
+  --clay-r-sm: 1.1rem;
+  --clay-r-md: 1.6rem;
+  --clay-r-lg: 2.25rem;
+  --clay-r-xl: 3rem;
+}
+
+@layer components {
+  /* lighting variables, shared by raised clay and wells */
+  :is(.clay, .clay-well) {
+    --s: var(--clay-surface, var(--card));
+    --c-hi: color-mix(in oklab, #fff var(--clay-hi), transparent);
+    --c-rim: color-mix(in oklab, #fff var(--clay-rim), transparent);
+    --c-lo: color-mix(in oklab, color-mix(in oklab, var(--s) 50%, var(--clay-deep)) var(--clay-lo), transparent);
+    --c-cast: color-mix(in oklab, color-mix(in oklab, var(--s) 30%, var(--clay-deep)) var(--clay-cast), transparent);
+    --c-contact: color-mix(in oklab, var(--clay-deep) calc(var(--clay-cast) * 0.7), transparent);
+    position: relative;
+  }
+
+  /* ---------- raised clay ---------- */
+  .clay {
+    --e-xs:
+      0.12rem 0.2rem 0.4rem -0.05rem var(--c-cast),
+      0.04rem 0.06rem 0.12rem var(--c-contact),
+      inset 0.07rem 0.07rem 0.1rem var(--c-rim),
+      inset 0.12rem 0.14rem 0.25rem var(--c-hi),
+      inset -0.14rem -0.18rem 0.3rem var(--c-lo),
+      var(--clay-glow, 0 0 0 0 transparent);
+    --e-sm:
+      0.3rem 0.5rem 0.9rem -0.15rem var(--c-cast),
+      0.06rem 0.1rem 0.25rem var(--c-contact),
+      inset 0.08rem 0.08rem 0.12rem var(--c-rim),
+      inset 0.22rem 0.26rem 0.45rem var(--c-hi),
+      inset -0.28rem -0.34rem 0.6rem var(--c-lo),
+      var(--clay-glow, 0 0 0 0 transparent);
+    --e-md:
+      0.7rem 1.1rem 1.9rem -0.4rem var(--c-cast),
+      0.12rem 0.2rem 0.45rem var(--c-contact),
+      inset 0.1rem 0.1rem 0.15rem var(--c-rim),
+      inset 0.45rem 0.5rem 0.9rem var(--c-hi),
+      inset -0.55rem -0.7rem 1.1rem var(--c-lo),
+      var(--clay-glow, 0 0 0 0 transparent);
+    --e-lg:
+      1.2rem 1.9rem 3.2rem -0.7rem var(--c-cast),
+      0.2rem 0.3rem 0.7rem var(--c-contact),
+      inset 0.12rem 0.12rem 0.2rem var(--c-rim),
+      inset 0.7rem 0.8rem 1.4rem var(--c-hi),
+      inset -0.9rem -1.1rem 1.7rem var(--c-lo),
+      var(--clay-glow, 0 0 0 0 transparent);
+    --e-xl:
+      2rem 3rem 5rem -1.2rem var(--c-cast),
+      0.3rem 0.45rem 1rem var(--c-contact),
+      inset 0.15rem 0.15rem 0.25rem var(--c-rim),
+      inset 1rem 1.1rem 2rem var(--c-hi),
+      inset -1.3rem -1.6rem 2.4rem var(--c-lo),
+      var(--clay-glow, 0 0 0 0 transparent);
+    /* pressed: the surface dips, so the lighting inverts */
+    --e-pressed:
+      0.08rem 0.12rem 0.25rem -0.05rem var(--c-cast),
+      0.02rem 0.03rem 0.08rem var(--c-contact),
+      inset -0.06rem -0.06rem 0.1rem var(--c-rim),
+      inset -0.18rem -0.22rem 0.4rem var(--c-hi),
+      inset 0.3rem 0.36rem 0.65rem var(--c-lo),
+      var(--clay-glow-pressed, 0 0 0 0 transparent);
+
+    border-radius: var(--clay-radius, var(--clay-r-lg));
+    background:
+      radial-gradient(120% 90% at 12% 0%, color-mix(in oklab, var(--s) calc(100% - var(--clay-sheen)), #fff), transparent 58%),
+      linear-gradient(150deg, color-mix(in oklab, var(--s) 94%, #fff), var(--s) 46%, color-mix(in oklab, var(--s) calc(100% - var(--clay-fall)), var(--clay-deep)));
+    box-shadow: var(--clay-elev, var(--e-md));
+  }
+  .clay-xs { --clay-elev: var(--e-xs); }
+  .clay-sm { --clay-elev: var(--e-sm); }
+  .clay-md { --clay-elev: var(--e-md); }
+  .clay-lg { --clay-elev: var(--e-lg); }
+  .clay-xl { --clay-elev: var(--e-xl); }
+
+  /* vibrant glaze: the one loud surface (primary button, the x orb) */
+  .clay-glaze {
+    --clay-surface: color-mix(in oklab, var(--glaze-peach), var(--glaze-plum));
+    --clay-glow: 0 0.55rem 1.7rem -0.35rem color-mix(in oklab, var(--glaze-plum) 72%, transparent);
+    --clay-glow-pressed: 0 0.15rem 0.6rem -0.25rem color-mix(in oklab, var(--glaze-plum) 60%, transparent);
+    background:
+      radial-gradient(120% 90% at 14% 0%, color-mix(in oklab, #fff 42%, transparent), transparent 56%),
+      linear-gradient(135deg, var(--glaze-peach), var(--glaze-plum));
+  }
+
+  /* ---------- inset wells: information and input live in a recess ---------- */
+  .clay-well {
+    --e-well:
+      0.12rem 0.16rem 0.1rem -0.02rem var(--c-hi),
+      inset 0.3rem 0.4rem 0.7rem var(--c-lo),
+      inset -0.12rem -0.16rem 0.3rem var(--c-hi);
+    --e-well-sm:
+      0.05rem 0.07rem 0.05rem -0.01rem var(--c-hi),
+      inset 0.12rem 0.15rem 0.25rem var(--c-lo),
+      inset -0.06rem -0.08rem 0.14rem var(--c-hi);
+    border-radius: var(--clay-radius, var(--clay-r-md));
+    background: color-mix(in oklab, var(--s) 88%, var(--clay-deep));
+    box-shadow: var(--clay-elev, var(--e-well));
+  }
+
+  /* ---------- behaviour ---------- */
+  .clay-press {
+    transition: transform 0.55s var(--ease-spring), box-shadow 0.45s var(--ease-out);
+  }
+  @media (hover: hover) {
+    .clay-press:not(:disabled, [aria-disabled="true"]):hover {
+      transform: translateY(-0.14rem);
+      --clay-elev: var(--e-md);
+    }
+  }
+  .clay-press:not(:disabled, [aria-disabled="true"]):active {
+    transform: translateY(0.05rem) scale(0.975);
+    --clay-elev: var(--e-pressed);
+    transition-duration: 0.07s, 0.07s;
+  }
+
+  /* ghost: flat until you reach for it */
+  .clay-flat:not(:hover, :focus-visible, :active) { background: transparent; box-shadow: none; }
+  .clay-flat.clay-press:not(:disabled, [aria-disabled="true"]):hover { --clay-elev: var(--e-xs); }
+
+  /* cards: a bigger lift, and pointer-following light */
+  .clay-lift { transition: transform 0.6s var(--ease-spring), box-shadow 0.5s var(--ease-out); }
+  @media (hover: hover) and (pointer: fine) {
+    .clay-lift:hover { transform: translateY(-0.4rem); --clay-elev: var(--e-xl); }
+  }
+  .clay-lit::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(34rem 22rem at var(--mx, 24%) var(--my, 0%), color-mix(in oklab, #fff 70%, transparent), transparent 62%);
+    opacity: calc(var(--lit, 0) * 0.8);
+    transition: opacity 0.5s var(--ease-out);
+    mix-blend-mode: soft-light;
+  }
+
+  /* on dark clay a white glare lowers text contrast fastest, so it gets less light */
+  .dark .clay-lit::before { opacity: calc(var(--lit, 0) * 0.5); }
+
+  /* fine grain so big surfaces feel like material, not vector */
+  .clay-grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0.07;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .dark .clay-grain::after { opacity: 0.1; }
+
+  /* the page itself: studio light, three soft pools of glaze */
+  .studio {
+    background:
+      radial-gradient(62rem 40rem at 10% -8%, color-mix(in oklab, var(--glaze-plum) var(--pool-1), transparent), transparent 70%),
+      radial-gradient(50rem 36rem at 98% 16%, color-mix(in oklab, var(--glaze-peach) var(--pool-2), transparent), transparent 72%),
+      radial-gradient(56rem 32rem at 46% 112%, color-mix(in oklab, var(--glaze-rose) var(--pool-3), transparent), transparent 70%),
+      var(--page);
+  }
+
+  /* ---------- bulbs and lamps: the status vocabulary ----------
+     aqua = shipped (lit), amber = building (pulsing), violet = learning (unlit glass) */
+  .bulb {
+    --b: var(--bulb-color, var(--glaze-peach));
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    flex: none;
+    border-radius: 999px;
+    background:
+      radial-gradient(circle at 32% 26%, color-mix(in oklab, var(--b) 28%, #fff) 0%, transparent 46%),
+      radial-gradient(circle at 50% 50%, var(--b) 0%, color-mix(in oklab, var(--b) 76%, var(--clay-deep)) 100%);
+    box-shadow:
+      inset 0.07em 0.08em 0.12em color-mix(in oklab, #fff 70%, transparent),
+      inset -0.1em -0.12em 0.2em color-mix(in oklab, var(--b) 52%, var(--clay-deep)),
+      0 0.14em 0.26em color-mix(in oklab, var(--clay-deep) 38%, transparent);
+  }
+  .lamp {
+    --size: 2.75rem;
+    --clay-radius: 999px;
+    position: relative; /* the halo is positioned against the lamp, not some ancestor */
+    flex: none; /* never squash into an ellipse inside a flex row */
+    display: inline-grid;
+    place-items: center;
+    width: var(--size);
+    height: var(--size);
+  }
+  .lamp[data-size="xs"] { --size: 0.8rem; }
+  .lamp[data-state="shipped"] { --lamp: var(--glaze-peach); --halo: 1; }
+  .lamp[data-state="building"] { --lamp: var(--glaze-apricot); --halo: 0.85; }
+  .lamp[data-state="learning"] { --lamp: var(--glaze-plum); --halo: 0; }
+  .lamp-bulb {
+    --bulb-color: var(--lamp);
+    position: relative;
+    font-size: calc(var(--size) * 0.56);
+  }
+  .lamp[data-size="xs"] .lamp-bulb { font-size: var(--size); }
+  .lamp[data-state="learning"] .lamp-bulb {
+    --bulb-color: color-mix(in oklab, var(--glaze-plum) 30%, var(--clay-base));
+  }
+  .lamp-halo {
+    position: absolute;
+    inset: -65%;
+    border-radius: 50%;
+    pointer-events: none;
+    background: radial-gradient(circle, color-mix(in oklab, var(--lamp) 62%, transparent) 0%, transparent 64%);
+    opacity: var(--halo, 0);
+    animation: halo-boot 0.9s var(--ease-out) var(--d, 0ms) backwards;
+  }
+  .lamp[data-state="building"] .lamp-halo {
+    animation:
+      halo-boot 0.9s var(--ease-out) var(--d, 0ms) backwards,
+      halo-pulse 2.4s ease-in-out calc(var(--d, 0ms) + 0.9s) infinite;
+  }
+}
+
+/* shadows disappear in forced-colors mode, so give shapes a real edge */
+@media (forced-colors: active) {
+  .clay, .clay-well { border: 1px solid CanvasText; }
+}

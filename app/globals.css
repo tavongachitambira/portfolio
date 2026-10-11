@@ -1,26 +1,135 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "../styles/palette.css";
+@import "../styles/motion.css";
+@import "../styles/clay.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --font-sans: var(--font-jakarta);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --color-ink-soft: var(--ink-soft);
+  --color-on-glaze: var(--on-glaze);
+  --color-glaze-peach: var(--glaze-peach);
+  --color-glaze-plum: var(--glaze-plum);
+  --color-glaze-mauve: var(--glaze-mauve);
+  --color-glaze-rose: var(--glaze-rose);
+  --color-glaze-apricot: var(--glaze-apricot);
+  --color-tone-peach: var(--tone-peach);
+  --color-tone-plum: var(--tone-plum);
+  --color-tone-mauve: var(--tone-mauve);
+  --color-tone-rose: var(--tone-rose);
+  --color-tone-apricot: var(--tone-apricot);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* keyframes live in styles/motion.css */
+  --animate-float-a: float-a 7s ease-in-out infinite;
+  --animate-float-b: float-b 8.5s ease-in-out infinite;
+  --animate-float-c: float-c 6s ease-in-out infinite;
+  --animate-shimmer: shimmer 1.8s ease-in-out infinite;
+  @keyframes shimmer {
+    from { transform: translateX(-100%); }
+    to   { transform: translateX(100%); }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+:root {
+  --radius: 1.25rem;
+  --background: var(--page);
+  --foreground: var(--ink);
+  --card: var(--clay-base);
+  --card-foreground: var(--ink);
+  --popover: var(--clay-base);
+  --popover-foreground: var(--ink);
+  --primary: var(--brand);
+  --primary-foreground: var(--on-brand);
+  --secondary: var(--clay-base);
+  --secondary-foreground: var(--ink);
+  --muted: color-mix(in oklab, var(--clay-base) 88%, var(--clay-deep));
+  --muted-foreground: var(--ink-mute);
+  --accent: var(--tone-plum);
+  --accent-foreground: var(--ink);
+  --destructive: var(--glaze-rose);
+  --border: color-mix(in oklab, var(--clay-deep) 14%, transparent);
+  --input: color-mix(in oklab, var(--clay-deep) 14%, transparent);
+  --ring: var(--focus);
+  --chart-1: var(--glaze-peach);
+  --chart-2: var(--glaze-plum);
+  --chart-3: var(--glaze-rose);
+  --chart-4: var(--glaze-apricot);
+  --chart-5: var(--glaze-mauve);
+  --sidebar: var(--clay-base);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--on-brand);
+  --sidebar-accent: var(--tone-plum);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--focus);
+}
+
+@keyframes blink {
+  to { visibility: hidden; }
+}
+
+/* Thin, background-coloured scrollbar */
+.scrollbar-clay::-webkit-scrollbar { height: 7px; width: 7px; }
+.scrollbar-clay::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-clay::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--muted-foreground) 30%, transparent);
+  border-radius: 9999px;
+}
+.scrollbar-clay::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklch, var(--primary) 55%, transparent);
+}
+.scrollbar-clay--buttons::-webkit-scrollbar { width: 10px; }
+.scrollbar-clay--buttons::-webkit-scrollbar-button:single-button {
+  display: block;
+  height: 10px;
+  background-color: color-mix(in oklch, var(--muted-foreground) 12%, transparent);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 8px;
+}
+.scrollbar-clay--buttons::-webkit-scrollbar-button:single-button:vertical:decrement {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='m2 6 3-3 3 3' fill='none' stroke='%23718481' stroke-width='1.4'/%3E%3C/svg%3E");
+}
+.scrollbar-clay--buttons::-webkit-scrollbar-button:single-button:vertical:increment {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='m2 4 3 3 3-3' fill='none' stroke='%23718481' stroke-width='1.4'/%3E%3C/svg%3E");
+}
+@supports not selector(::-webkit-scrollbar) {
+  .scrollbar-clay {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklch, var(--muted-foreground) 30%, transparent) transparent;
+  }
 }
