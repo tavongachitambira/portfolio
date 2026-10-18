@@ -35,7 +35,12 @@ export function DiffBar({
         )}
       </div>
 
-      <div className="clay-well mt-2 h-3.5 overflow-hidden rounded-full p-0.5">
+     <div
+   className={cn(
+     "clay-well mt-2 h-3.5 overflow-hidden rounded-full p-0.5",
+     loading && "animate-pulse",
+   )}
+ > 
         <motion.div
           className={cn(
             "h-full rounded-full shadow-[inset_0_2px_3px_rgba(255,255,255,0.4)]",

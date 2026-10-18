@@ -5,7 +5,7 @@ import { Slot } from "radix-ui"
 import { cn } from "@/lib/utils"
 
 /* shadcn Button, re-skinned as clay. Same API as stock shadcn (variant, size, asChild),
-   so docs and examples keep working. The depth recipes live in styles/clay.css.
+   so docs and examples keep working. The depth recipes (including .clay-btn) live in styles/clay.css.
    Focus uses outline, not ring: Tailwind's ring is a box-shadow and would erase the clay. */
 const buttonVariants = cva(
   "inline-flex shrink-0 select-none items-center justify-center gap-2 rounded-full text-sm font-semibold whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 aria-invalid:outline-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -13,17 +13,17 @@ const buttonVariants = cva(
     variants: {
       variant: {
         // the one loud button: glaze gradient + glow
-        default: "clay clay-glaze clay-sm clay-press text-on-glaze",
+        default: "clay clay-glaze clay-btn text-on-glaze",
         // neutral raised clay
-        secondary: "clay clay-sm clay-press text-secondary-foreground",
+        secondary: "clay clay-btn text-secondary-foreground",
         // tinted raised clay
         outline:
-          "clay clay-xs clay-press text-foreground [--clay-surface:var(--tone-plum)]",
+          "clay clay-btn text-foreground [--clay-surface:var(--tone-plum)]",
         // flat until you reach for it
         ghost:
-          "clay clay-xs clay-flat clay-press text-muted-foreground hover:text-foreground",
+          "clay clay-btn clay-flat text-muted-foreground hover:text-foreground",
         destructive:
-          "clay clay-sm clay-press text-on-glaze [--clay-surface:var(--glaze-rose)]",
+          "clay clay-btn text-on-glaze [--clay-surface:var(--glaze-rose)]",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

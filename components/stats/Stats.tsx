@@ -3,6 +3,7 @@
 import { FaGithub } from "react-icons/fa";
 import { SiLeetcode } from "react-icons/si";
 import { useRemoteData } from "@/hooks/useRemoteData";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   GITHUB_URL,
   LEETCODE_URL,
@@ -22,6 +23,8 @@ export default function Stats() {
   const ghData = gh.status === "success" ? gh.data : null;
   const lcData = lc.status === "success" ? lc.data : null;
 
+
+  
   return (
     <div className="flex w-full flex-col gap-6" aria-busy={ghLoading || lcLoading}>
       <StatCard icon={<FaGithub />} title="GitHub" failed={gh.status === "error"}>
@@ -64,7 +67,7 @@ export default function Stats() {
           textClass="text-rose-600 dark:text-rose-400"
           fillClass="bg-rose-500"
         />
-
+{lcLoading && <Skeleton className="mt-5 h-3 w-32" />}
         {lcData && lcData.ranking > 0 && (
           <div className="mt-5 font-mono text-xs text-muted-foreground">
             Global ranking:{" "}

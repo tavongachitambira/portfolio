@@ -87,9 +87,7 @@ const clip = useTransform(smooth, (v) => {
   }, [phase])
 
   if (phase === "done") return null
-
-  const textClass = "text-center text-4xl font-bold tracking-tight sm:text-6xl"
-
+const textClass ="text-center font-sans text-3xl font-bold uppercase tracking-[0.12em] sm:text-4xl"
   return (
     <motion.div
       role="status"

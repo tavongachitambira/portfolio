@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 import { ArrowUpRight } from "lucide-react"
-
+import { ComingSoon } from "@/components/ui/coming-soon"
 import { fadeUp } from "@/lib/motion"
 import { formatPostDate, postYear, posts as allPosts, type Post } from "@/lib/data/writing"
 
@@ -14,6 +14,9 @@ export function WritingList({
   posts?: Post[]
   groupByYear?: boolean
 }) {
+  if (!posts.length) {
+   return <ComingSoon message="Articles, papers and talks will land here. Nothing published yet." />
+ }
   if (!groupByYear) return <Rows posts={posts} />
 
   const years = [...new Set(posts.map((p) => postYear(p.date)))]

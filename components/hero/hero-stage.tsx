@@ -38,6 +38,7 @@ export function HeroStage({
   const rootRef = useRef<HTMLDivElement>(null)
   const scrollY = useMotionValue(0)
   const [end, setEnd] = useState(700)
+    const [box, setBox] = useState<{ left: number; top: number; width: number; height: number } | null>(null)
 
   useEffect(() => {
     const scroller = isMobile ? null : scrollContainerRef.current
@@ -56,6 +57,14 @@ export function HeroStage({
 
     onScroll()
     measure()
+          const root = rootRef.current
+      if (scroller && root) {
+        const r = root.getBoundingClientRect()
+        setBox({ left: r.left, top: r.top + scroller.scrollTop, width: r.width, height: r.height })
+      } else {
+        setBox(null)
+      }
+
     target.addEventListener("scroll", onScroll, { passive: true })
     window.addEventListener("resize", measure)
     return () => {
@@ -64,6 +73,7 @@ export function HeroStage({
     }
   }, [isMobile, scrollContainerRef, scrollY])
 
+    const layerY = useTransform(scrollY, (v) => -v) // fixed layer follows the content
   const raw = useTransform(scrollY, [0, end], [0, 1], { clamp: true })
   const progress = useSpring(raw, { stiffness: 70, damping: 22, mass: 0.8 })
 
@@ -72,28 +82,38 @@ export function HeroStage({
   const screwY = useTransform(progress, [0, 0.5, 1], [0, -10, -24])
   const screwOpacity = useTransform(progress, [0, 0.75, 1], [1, 1, 0])
 
+    const floating = !isMobile && box !== null
+
   return (
-    <div ref={rootRef} className="relative mx-auto flex w-full max-w-[34rem] flex-col items-center justify-center overflow-hidden py-12 lg:h-screen lg:overflow-visible lg:py-0">
-      <Pane pane={stagePanes.web} progress={progress} />
+    <div ref={rootRef} className="relative mx-auto w-full max-w-[34rem] overflow-hidden lg:h-screen lg:overflow-visible">
+      <motion.div
+        style={floating ? { left: box.left, top: box.top, width: box.width, height: box.height, y: layerY } : undefined}
+        className={cn(
+          "flex flex-col items-center justify-center",
+          floating ? "pointer-events-none fixed z-10" : "relative w-full py-12 lg:h-full lg:py-0",
+        )}
+      >
+        <Pane pane={stagePanes.web} progress={progress} />
 
-      {/* zero-height spacer sitting exactly on the seam between the blocks */}
-      <div aria-hidden className="relative z-20 h-0">
-        <div className="pointer-events-none absolute top-2.5 left-1/2 -translate-x-1/2 -translate-y-1/2">
-          <motion.div
-            style={{
-              rotate: screwRotate,
-              y: screwY,
-              opacity: screwOpacity,
-              transformOrigin: "center",
-              willChange: "transform",
-            }}
-          >
-            <XOrb mode="multiply" className="clay-lg size-[4.25rem]" />
-          </motion.div>
+        {/* zero-height spacer sitting exactly on the seam between the blocks */}
+        <div aria-hidden className="relative z-20 h-0">
+          <div className="pointer-events-none absolute top-2.5 left-1/2 -translate-x-1/2 -translate-y-1/2">
+            <motion.div
+              style={{
+                rotate: screwRotate,
+                y: screwY,
+                opacity: screwOpacity,
+                transformOrigin: "center",
+                willChange: "transform",
+              }}
+            >
+              <XOrb mode="multiply" className="clay-lg size-[4.25rem]" />
+            </motion.div>
+          </div>
         </div>
-      </div>
 
-      <Pane pane={stagePanes.ml} progress={progress} />
+        <Pane pane={stagePanes.ml} progress={progress} />
+      </motion.div>
     </div>
   )
 }
@@ -132,7 +152,10 @@ function Pane({
     // pivot layer: owns only the swing/fall/fade, so the entry animation below is untouched
     <motion.div
       style={{ rotate, x, y, opacity, filter, transformOrigin }}
-      className={cn("relative w-[84%] min-w-0 will-change-transform", !isWeb && "mt-5 ml-auto")}
+           className={cn(
+        "relative w-[84%] min-w-0 will-change-transform",
+        isWeb ? "z-10" : "z-[5] mt-5 ml-auto",
+      )}
     >
       {/* the slab: entry animation unchanged */}
       <motion.div
@@ -151,7 +174,7 @@ function Pane({
         <span className="block text-xl font-bold tracking-tight">{pane.title}</span>
 
         {isWeb ? (
-          <BoardMock className="mt-3 text-[0.8rem]" />
+          <BoardMock className="mt-3 text-[0.58rem] min-[420px]:text-[0.7rem] sm:text-[0.8rem]" />
         ) : (
           <div className="clay-well mt-3 p-3 [--clay-radius:var(--clay-r-sm)]">
             <NeuralViz />

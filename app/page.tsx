@@ -17,6 +17,7 @@ import { useIsMobile } from "@/hooks/useIsMobile"
 import { useWheelForward } from "@/hooks/useWheelForward"
 import { labelOf, sectionIds } from "@/lib/data/nav"
 import { previewPosts } from "@/lib/data/writing"
+import { ComingSoon } from "@/components/ui/coming-soon"
 
 export default function Home() {
   const isMobile = useIsMobile()
@@ -65,12 +66,13 @@ export default function Home() {
                 more={{ href: "/projects", label: "View all projects" }}
               >
                 <ProjectTabs />
+                
               </Section>
 
               <Section
                 id="writing"
                 title={labelOf("writing")}
-                more={{ href: "/writing", label: "View all writing" }}
+                more={previewPosts.length ? { href: "/writing", label: "View all writing" } : undefined}
               >
                 <WritingList posts={previewPosts} />
               </Section>

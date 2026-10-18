@@ -29,7 +29,27 @@ export function Heatmap({
     if (el) el.scrollLeft = el.scrollWidth;
   }, [weeks]);
 
-  if (loading) return <Skeleton className="h-28 w-full" />;
+ if (loading) {
+   return (
+     <div className="clay-well overflow-hidden" aria-hidden>
+       <div className="mx-3 mb-3 mt-4 overflow-hidden px-1 pb-3">
+         <div className="flex min-w-max gap-[3px]">
+           {Array.from({ length: 53 }, (_, w) => (
+             <div key={w} className="flex flex-col gap-[3px]">
+               {Array.from({ length: 7 }, (_, d) => (
+                 <Skeleton
+                   key={d}
+                   className="size-2.5 rounded-[3px]"
+                   style={{ animationDelay: `${w * 25}ms` }}
+                 />
+               ))}
+             </div>
+           ))}
+         </div>
+       </div>
+     </div>
+   );
+ }
 
   if (!weeks.length) {
     return (

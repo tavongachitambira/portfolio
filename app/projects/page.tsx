@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import { PageShell } from "@/components/layout/PageShell"
 import { ProjectCard } from "@/components/projects/ProjectCard"
 import { sortedProjects } from "@/lib/data/projects"
-
+import { ComingSoon } from "@/components/ui/coming-soon"
 export const metadata: Metadata = { title: "Projects" }
 
 export default function ProjectsPage() {
@@ -17,6 +17,7 @@ export default function ProjectsPage() {
         {sortedProjects.map((project, i) => (
           <ProjectCard key={project.name} project={project} index={i} />
         ))}
+        <ComingSoon  message="More projects are in the works." />
       </div>
     </PageShell>
   )

@@ -134,6 +134,72 @@
   .clay-flat:not(:hover, :focus-visible, :active) { background: transparent; box-shadow: none; }
   .clay-flat.clay-press:not(:disabled, [aria-disabled="true"]):hover { --clay-elev: var(--e-xs); }
 
+  /* ---------- clay button: puffy, pressable ----------
+     Chunkier inner light and shade than --e-sm, so it reads as an inflated pillow.
+     Sizes are in em, so the puff scales with the button's font size. */
+  .clay-btn {
+    /* same six layers in the same order as the other elevations, so rest -> hover -> pressed interpolates */
+    --b-rest:
+      0.18em 0.42em 0.75em -0.12em var(--c-cast),
+      0.05em 0.1em 0.2em var(--c-contact),
+      inset 0.07em 0.07em 0.1em var(--c-rim),
+      inset 0.4em 0.45em 0.7em var(--c-hi),
+      inset -0.5em -0.6em 0.8em var(--c-lo),
+      var(--clay-glow, 0 0 0 0 transparent);
+    --b-hover:
+      0.28em 0.62em 1em -0.14em var(--c-cast),
+      0.06em 0.12em 0.25em var(--c-contact),
+      inset 0.07em 0.07em 0.1em var(--c-rim),
+      inset 0.45em 0.5em 0.8em var(--c-hi),
+      inset -0.55em -0.65em 0.9em var(--c-lo),
+      var(--clay-glow, 0 0 0 0 transparent);
+    /* pressed: the surface dips, so the lighting inverts and the cast shadow almost disappears */
+    --b-pressed:
+      0.03em 0.08em 0.18em -0.04em var(--c-cast),
+      0.02em 0.03em 0.06em var(--c-contact),
+      inset -0.06em -0.06em 0.1em var(--c-rim),
+      inset -0.25em -0.3em 0.5em var(--c-hi),
+      inset 0.5em 0.6em 0.8em var(--c-lo),
+      var(--clay-glow-pressed, 0 0 0 0 transparent);
+    --clay-elev: var(--b-rest);
+    transition: transform 0.5s var(--ease-spring), box-shadow 0.4s var(--ease-out);
+  }
+  @media (hover: hover) {
+    .clay-btn:not(:disabled, [aria-disabled="true"]):hover {
+      transform: translateY(-0.12em);
+      --clay-elev: var(--b-hover);
+    }
+  }
+  .clay-btn:not(:disabled, [aria-disabled="true"]):active {
+    /* sinks and squashes slightly wider than tall, like soft clay under a thumb */
+    transform: translateY(0.1em) scale(1.015, 0.95);
+    --clay-elev: var(--b-pressed);
+    transition-duration: 0.08s, 0.08s;
+  }
+  /* ghost buttons stay gentle on hover */
+  .clay-flat.clay-btn:not(:disabled, [aria-disabled="true"]):hover { --clay-elev: var(--b-rest); }
+
+  /* wet-clay gloss along the top edge (delete this block if you want it plainer) */
+  .clay-btn::before {
+    content: "";
+    position: absolute;
+    inset: 0.14em 18% auto 18%;
+    height: 0.38em;
+    border-radius: 999px;
+    background: linear-gradient(to bottom, color-mix(in oklab, #fff 55%, transparent), transparent);
+    opacity: 0.55;
+    pointer-events: none;
+    transition: opacity 0.3s var(--ease-out);
+  }
+  .dark .clay-btn::before { opacity: 0.22; }
+  .clay-btn:active::before { opacity: 0.12; }
+  .clay-flat:not(:hover, :focus-visible, :active)::before { opacity: 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .clay-btn:not(:disabled):hover,
+    .clay-btn:not(:disabled):active { transform: none; }
+  }
+
   /* cards: a bigger lift, and pointer-following light */
   .clay-lift { transition: transform 0.6s var(--ease-spring), box-shadow 0.5s var(--ease-out); }
   @media (hover: hover) and (pointer: fine) {
