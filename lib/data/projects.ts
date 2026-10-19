@@ -29,6 +29,7 @@ export const projects: Project[] = [
       "Ownership transfers only through one dedicated, atomic route.",
     ],
     tags: ["Next.js", "Socket.io", "Yjs", "Redis", "PostgreSQL", "BullMQ", "Stripe", "Kubernetes"],
+    thumb: "https://images.unsplash.com/photo-1511818966892-d7d671e672a2?auto=format&fit=crop&w=1000&q=85",
     role: "Solo Architect & Developer",
     status: "IN PROGRESS",
     startDate: "July 2026",

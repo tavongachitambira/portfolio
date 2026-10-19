@@ -85,7 +85,7 @@ export function HeroStage({
     const floating = !isMobile && box !== null
 
   return (
-    <div ref={rootRef} className="relative z-20 mx-auto w-full max-w-136 overflow-visible lg:h-screen">
+    <div ref={rootRef} className="relative z-20 mx-auto w-full max-w-136 overflow-visible lg:max-xl:max-w-112 lg:max-xl:h-[clamp(620px,76vh,760px)] xl:max-w-120 xl:h-[calc(100vh+2rem)] xl:max-h-none">
       <motion.div
         style={floating ? { left: box.left, top: box.top, width: box.width, height: box.height, y: layerY } : undefined}
         className={cn(

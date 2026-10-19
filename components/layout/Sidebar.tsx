@@ -57,13 +57,14 @@ export function Sidebar({ asideRef, activeSection, onNavigate }: SidebarProps) {
   return (
     <aside
       ref={asideRef}
-      className="flex w-full flex-col justify-between gap-10 px-6 py-10 lg:sticky lg:top-0 lg:h-screen lg:w-1/3 lg:px-8 lg:py-12 xl:w-2/5 xl:px-12 xl:py-16"
+      className="flex w-full flex-col justify-between gap-10 px-6 py-10 lg:sticky lg:top-0 lg:h-screen lg:w-1/3 lg:gap-4 lg:px-6 lg:py-6 xl:w-2/5 xl:px-12 xl:py-10 tall:py-14"
     >
-      <header className="flex flex-col gap-6">
+      {/* Block 1: intro */}
+      <header className="flex flex-col gap-6 lg:gap-4 xl:gap-5 tall:gap-8">
         <TypedText text="Hi, my name is" className="font-mono text-sm text-primary" />
 
         <motion.div {...reveal(1)}>
-          <h1 className="text-4xl leading-[1.05] font-extrabold tracking-tight sm:text-5xl">
+          <h1 className="text-4xl leading-[1.05] font-extrabold tracking-tight sm:text-5xl lg:max-xl:text-[2.65rem]">
             Tavonga
             <span className="block bg-linear-to-r from-primary to-glaze-rose bg-clip-text text-transparent">
               Chitambira
@@ -71,19 +72,20 @@ export function Sidebar({ asideRef, activeSection, onNavigate }: SidebarProps) {
           </h1>
           <RotatingText
             items={roles}
-            className="mt-3 text-lg font-medium text-foreground/80 lg:text-xl"
+            className="mt-3 text-lg font-medium text-foreground/80 xl:text-xl tall:mt-5"
           />
         </motion.div>
 
-        <motion.p {...reveal(2)} className="max-w-sm text-base font-medium leading-relaxed text-muted-foreground">
+        <motion.p
+          {...reveal(2)}
+          className="max-w-sm text-base font-medium leading-relaxed text-muted-foreground"
+        >
           I build models and the web products around them.
         </motion.p>
 
-        <motion.div {...reveal(3)} className="flex flex-row flex-wrap gap-3">
+        <motion.div {...reveal(3)} className="flex flex-row flex-wrap gap-3 tall:gap-4">
           <Button asChild>
-            <Link href="/projects">
-              Explore my work
-            </Link>
+            <Link href="/projects">Explore my work</Link>
           </Button>
           <Button asChild variant="secondary">
             <a href={site.resume} download>
@@ -94,7 +96,11 @@ export function Sidebar({ asideRef, activeSection, onNavigate }: SidebarProps) {
         </motion.div>
       </header>
 
-      <nav className="hidden flex-col items-start lg:flex" aria-label="Sections">
+      {/* Block 2: nav */}
+      <nav
+        className="hidden flex-col items-start lg:flex lg:gap-0 xl:gap-1 tall:gap-3"
+        aria-label="Sections"
+      >
         {navLinks.map((link, i) => {
           const isActive = activeSection === link.id
           return (
@@ -104,7 +110,7 @@ export function Sidebar({ asideRef, activeSection, onNavigate }: SidebarProps) {
                 onClick={(e) => onNavigate(e, `#${link.id}`)}
                 aria-current={isActive ? "location" : undefined}
                 className={cn(
-                  "group relative grid grid-cols-[1.75rem_auto] items-center gap-3 py-3 pl-5 text-left font-mono text-[11px] font-bold tracking-[0.12em] uppercase transition-colors duration-300",
+                  "group relative grid grid-cols-[1.75rem_auto] items-center gap-3 py-2 pl-5 text-left font-mono text-[11px] font-bold tracking-[0.12em] uppercase transition-colors duration-300 xl:py-2.5 tall:py-3.5",
                   isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                 )}
               >
@@ -117,12 +123,21 @@ export function Sidebar({ asideRef, activeSection, onNavigate }: SidebarProps) {
                     />
                     <motion.span
                       layoutId="nav-route-marker"
-                      className="absolute top-1/2 left-[-3px] size-[7px] -translate-y-1/2 rounded-full bg-primary shadow-[0_0_0_4px_color-mix(in_oklab,var(--primary)_18%,transparent)]"
+                      className="absolute top-1/2 left-0.75 size-1.75 -translate-y-1/2 rounded-full bg-primary shadow-[0_0_0_4px_color-mix(in_oklab,var(--primary)_18%,transparent)]"
                       transition={motionSpring}
                     />
                   </>
                 )}
-                <span className={cn("text-[10px] tabular-nums transition-colors", isActive ? "text-primary" : "text-muted-foreground/60 group-hover:text-primary")}>{String(i + 1).padStart(2, "0")}</span>
+                <span
+                  className={cn(
+                    "text-[10px] tabular-nums transition-colors",
+                    isActive
+                      ? "text-primary"
+                      : "text-muted-foreground/60 group-hover:text-primary",
+                  )}
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </span>
                 <span>{link.label}</span>
               </Link>
             </motion.div>
@@ -130,32 +145,40 @@ export function Sidebar({ asideRef, activeSection, onNavigate }: SidebarProps) {
         })}
       </nav>
 
-      <motion.ul variants={fadeIn} initial="hidden" animate="visible" className="flex flex-wrap items-center gap-4">
-        {socials.filter(({ label }) => label !== "Gmail").map(({ label, href, icon: Icon }, i) => (
-          <motion.li
-            key={label}
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.35 + i * 0.05, duration: 0.25 }}
-            className="group relative"
-          >
-            <motion.a
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={label}
-              whileHover={{ y: -3 }}
-              whileFocus={{ y: -3 }}
-              transition={{ type: "spring", stiffness: 420, damping: 22 }}
-              className="clay clay-sm clay-press flex size-11 items-center justify-center rounded-full text-muted-foreground hover:text-primary"
+      {/* Block 3: socials */}
+      <motion.ul
+        variants={fadeIn}
+        initial="hidden"
+        animate="visible"
+        className="flex flex-wrap items-center gap-x-4 gap-y-3 lg:max-xl:gap-x-5 tall:gap-y-6"
+      >
+        {socials
+          .filter(({ label }) => label !== "Gmail")
+          .map(({ label, href, icon: Icon }, i) => (
+            <motion.li
+              key={label}
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.35 + i * 0.05, duration: 0.25 }}
+              className="group relative"
             >
-              <Icon className="size-5" />
-            </motion.a>
-            <span className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-[10px] font-semibold text-background opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
-              {label}
-            </span>
-          </motion.li>
-        ))}
+              <motion.a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={label}
+                whileHover={{ y: -3 }}
+                whileFocus={{ y: -3 }}
+                transition={{ type: "spring", stiffness: 420, damping: 22 }}
+                className="clay clay-sm clay-press flex size-11 items-center justify-center rounded-full text-muted-foreground hover:text-primary tall:size-12"
+              >
+                <Icon className="size-5" />
+              </motion.a>
+              <span className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-[10px] font-semibold text-background opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+                {label}
+              </span>
+            </motion.li>
+          ))}
         <motion.li
           initial={{ opacity: 0, scale: 0.92 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -168,9 +191,13 @@ export function Sidebar({ asideRef, activeSection, onNavigate }: SidebarProps) {
             whileHover={{ y: -3 }}
             whileFocus={{ y: -3 }}
             transition={{ type: "spring", stiffness: 420, damping: 22 }}
-            className="clay clay-sm clay-press flex h-11 items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-muted-foreground hover:text-primary"
+            className="clay clay-sm clay-press flex h-11 items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-muted-foreground hover:text-primary tall:h-12"
           >
-            {emailCopied ? <Check className="size-4" aria-hidden="true" /> : <Copy className="size-4" aria-hidden="true" />}
+            {emailCopied ? (
+              <Check className="size-4" aria-hidden="true" />
+            ) : (
+              <Copy className="size-4" aria-hidden="true" />
+            )}
             {emailCopied ? "Copied" : "Copy email"}
           </motion.button>
         </motion.li>

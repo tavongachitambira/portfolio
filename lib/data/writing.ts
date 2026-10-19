@@ -19,6 +19,20 @@ export const posts: Post[] = [
     venue: "Personal blog",
     date: "2026-09-21",
     href: "#",
+  },{
+    title: "Why crosrs-tenant requests should return 404, not 403",
+    summary: "A short note on information leaks in multi-tenant APIs and how SyncBoard avoids them.",
+    kind: "Article",
+    venue: "Personal blog",
+    date: "2026-09-24",
+    href: "#",
+  },{
+    title: "Why crotss-tenant requests should return 404, not 403",
+    summary: "A short note on information leaks in multi-tenant APIs and how SyncBoard avoids them.",
+    kind: "Article",
+    venue: "Personal blog",
+    date: "2026-09-23",
+    href: "#",
   },
  
 ]
