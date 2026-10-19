@@ -29,7 +29,23 @@ export function Sidebar({ asideRef, activeSection, onNavigate }: SidebarProps) {
 
   const copyEmail = async () => {
     try {
-      await navigator.clipboard.writeText(site.email)
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(site.email)
+      } else {
+        const input = document.createElement("textarea")
+        input.value = site.email
+        input.setAttribute("readonly", "")
+        input.style.position = "fixed"
+        input.style.opacity = "0"
+        document.body.appendChild(input)
+        input.select()
+
+        const copied = document.execCommand("copy")
+        input.remove()
+
+        if (!copied) throw new Error("Clipboard copy failed")
+      }
+
       setEmailCopied(true)
       window.setTimeout(() => setEmailCopied(false), 1800)
     } catch {
@@ -41,7 +57,7 @@ export function Sidebar({ asideRef, activeSection, onNavigate }: SidebarProps) {
   return (
     <aside
       ref={asideRef}
-      className="flex w-full flex-col justify-between gap-10 px-6 py-10 lg:sticky lg:top-0 lg:h-screen lg:w-2/5 lg:px-12 lg:py-16"
+      className="flex w-full flex-col justify-between gap-10 px-6 py-10 lg:sticky lg:top-0 lg:h-screen lg:w-1/3 lg:px-8 lg:py-12 xl:w-2/5 xl:px-12 xl:py-16"
     >
       <header className="flex flex-col gap-6">
         <TypedText text="Hi, my name is" className="font-mono text-sm text-primary" />
@@ -114,7 +130,7 @@ export function Sidebar({ asideRef, activeSection, onNavigate }: SidebarProps) {
         })}
       </nav>
 
-      <motion.ul variants={fadeIn} initial="hidden" animate="visible" className="flex items-center gap-4">
+      <motion.ul variants={fadeIn} initial="hidden" animate="visible" className="flex flex-wrap items-center gap-4">
         {socials.filter(({ label }) => label !== "Gmail").map(({ label, href, icon: Icon }, i) => (
           <motion.li
             key={label}

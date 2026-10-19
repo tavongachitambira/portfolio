@@ -93,7 +93,7 @@ const textClass ="text-center font-sans text-3xl font-bold uppercase tracking-[0
       role="status"
       aria-busy="true"
       aria-label="Loading Tavonga Chitambira's portfolio"
-      className="fixed inset-0 z-[100] grid place-items-center overflow-hidden bg-background px-6"
+      className="fixed inset-0 z-100 grid place-items-center overflow-hidden bg-background px-6"
       initial={{ clipPath: "inset(0% 0 0 0)" }}
       animate={{ clipPath: phase === "exit" ? "inset(0 0 100% 0)" : "inset(0% 0 0 0)" }} // lifts up
       transition={{ duration: EXIT_S, ease: [0.76, 0, 0.24, 1] }}

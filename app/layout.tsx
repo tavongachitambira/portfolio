@@ -29,7 +29,7 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
       className={cn(
-        "h-full antialiased font-sans",
+        "h-full dark antialiased font-sans",
         jakarta.variable,
         geistMono.variable,
       )}

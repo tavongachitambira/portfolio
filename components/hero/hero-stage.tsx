@@ -85,7 +85,7 @@ export function HeroStage({
     const floating = !isMobile && box !== null
 
   return (
-    <div ref={rootRef} className="relative mx-auto w-full max-w-[34rem] overflow-hidden lg:h-screen lg:overflow-visible">
+    <div ref={rootRef} className="relative z-20 mx-auto w-full max-w-136 overflow-visible lg:h-screen">
       <motion.div
         style={floating ? { left: box.left, top: box.top, width: box.width, height: box.height, y: layerY } : undefined}
         className={cn(
@@ -107,7 +107,7 @@ export function HeroStage({
                 willChange: "transform",
               }}
             >
-              <XOrb mode="multiply" className="clay-lg size-[4.25rem]" />
+              <XOrb mode="multiply" className="clay-lg size-17" />
             </motion.div>
           </div>
         </div>
@@ -154,7 +154,7 @@ function Pane({
       style={{ rotate, x, y, opacity, filter, transformOrigin }}
            className={cn(
         "relative w-[84%] min-w-0 will-change-transform",
-        isWeb ? "z-10" : "z-[5] mt-5 ml-auto",
+        isWeb ? "z-10" : "z-5 mt-5 ml-auto",
       )}
     >
       {/* the slab: entry animation unchanged */}
