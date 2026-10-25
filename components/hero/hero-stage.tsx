@@ -153,7 +153,7 @@ function Pane({
     <motion.div
       style={{ rotate, x, y, opacity, filter, transformOrigin }}
            className={cn(
-        "relative w-[84%] min-w-0 will-change-transform",
+        "relative w-full min-w-0 will-change-transform sm:w-[90%]",
         isWeb ? "z-10" : "z-5 mt-5 ml-auto",
       )}
     >
