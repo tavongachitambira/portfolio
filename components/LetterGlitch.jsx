@@ -173,6 +173,7 @@ const LetterGlitch = ({
   lightMode = false,
   backgroundColor,
   dpr,
+  renderer = 'auto',
   className = '',
   style,
   ...rest
@@ -210,13 +211,16 @@ const LetterGlitch = ({
     const canvas = canvasRef.current;
     if (!container || !canvas) return undefined;
 
-    const gl = canvas?.getContext('webgl2', {
-      alpha: true,
-      premultipliedAlpha: true,
-      antialias: false,
-      depth: false,
-      stencil: false
-    });
+    const gl =
+      renderer === '2d'
+        ? null
+        : canvas.getContext('webgl2', {
+            alpha: true,
+            premultipliedAlpha: true,
+            antialias: false,
+            depth: false,
+            stencil: false
+          });
     if (!gl) {
       const context = canvas.getContext('2d');
       if (!context) {
@@ -1037,7 +1041,7 @@ const LetterGlitch = ({
       gl.deleteVertexArray(vao);
       gl.deleteProgram(program.program);
     };
-  }, []);
+  }, [renderer]);
 
   useEffect(() => {
     settingsRef.current = settings;

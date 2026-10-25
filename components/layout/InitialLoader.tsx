@@ -134,6 +134,7 @@ export function InitialLoader() {
           edgeFade={0.1}
           clickEffect="none"
           fontSize={14}
+          renderer="2d"
         />
       </div>
 

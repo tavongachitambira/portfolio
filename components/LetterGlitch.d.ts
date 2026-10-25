@@ -22,6 +22,7 @@
      lightMode?: boolean
      backgroundColor?: string
      dpr?: number
+     renderer?: "auto" | "2d"
      className?: string
      style?: CSSProperties
    }>
