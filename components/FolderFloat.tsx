@@ -1,6 +1,6 @@
 "use client"
 
-import { useId, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 
 import "./FolderFloat.css"
 
@@ -15,6 +15,8 @@ type FolderFloatProps = {
   sublabel?: string
   trigger?: "hover" | "click"
   closeOnSelect?: boolean
+  /** How long (ms) the folder stays open after a click, so the items can be read. */
+  holdMs?: number
   physics?: boolean
   drift?: number
   onSelect?: (value: string, index: number) => void
@@ -45,6 +47,7 @@ export default function FolderFloat({
   sublabel,
   trigger = "hover",
   closeOnSelect = true,
+  holdMs = 3200,
   physics = true,
   drift = 0.5,
   onSelect,
@@ -78,9 +81,48 @@ export default function FolderFloat({
   const list = items.map((item) => (typeof item === "string" ? { label: item, value: item } : { ...item, value: item.value ?? item.label }))
   const noteCount = sublabel ?? `${list.length} ${list.length === 1 ? "skill" : "skills"}`
 
+  /* A click "pins" the folder open for `holdMs` so it never flashes open and shut:
+     - hover mode: hover already opened it, so a click used to toggle it closed. It now pins it instead.
+     - picking an item no longer closes it on the spot; it closes after the hold.
+     When the hold ends it closes, unless the pointer is still over it (hover mode). */
+  const pinned = useRef(false)
+  const hovering = useRef(false)
+  const timer = useRef<number | undefined>(undefined)
+
+  const clearHold = () => {
+    if (timer.current !== undefined) window.clearTimeout(timer.current)
+    timer.current = undefined
+  }
+  const hold = () => {
+    pinned.current = true
+    clearHold()
+    timer.current = window.setTimeout(() => {
+      pinned.current = false
+      timer.current = undefined
+      if (trigger === "click" || !hovering.current) setOpen(false)
+    }, holdMs)
+  }
+  useEffect(() => clearHold, [])
+
+  const toggle = () => {
+    if (trigger === "hover") {
+      setOpen(true)
+      hold()
+      return
+    }
+    // click mode (touch): tap to open, tap again to close
+    if (open) {
+      clearHold()
+      pinned.current = false
+      setOpen(false)
+    } else {
+      setOpen(true)
+    }
+  }
+
   const select = (item: FolderFloatItem & { value: string }, index: number) => {
     onSelect?.(item.value, index)
-    if (closeOnSelect) setOpen(false)
+    if (closeOnSelect) hold()
   }
 
   return (
@@ -88,11 +130,29 @@ export default function FolderFloat({
       className="folder-float"
       data-open={open || undefined}
       data-physics={physics || undefined}
-      onPointerEnter={trigger === "hover" ? () => setOpen(true) : undefined}
-      onPointerLeave={trigger === "hover" ? () => setOpen(false) : undefined}
+      onPointerEnter={
+        trigger === "hover"
+          ? () => {
+              hovering.current = true
+              setOpen(true)
+            }
+          : undefined
+      }
+      onPointerLeave={
+        trigger === "hover"
+          ? () => {
+              hovering.current = false
+              if (!pinned.current) setOpen(false)
+            }
+          : undefined
+      }
       onFocusCapture={trigger === "hover" ? () => setOpen(true) : undefined}
       onBlurCapture={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false)
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          clearHold()
+          pinned.current = false
+          setOpen(false)
+        }
       }}
       style={{
         "--ff-w": `${width}px`, "--ff-h": `${height}px`, "--ff-r": `${radius}px`,
@@ -130,7 +190,7 @@ export default function FolderFloat({
           <span className="folder-float__label">{label}</span>
           <span id={descriptionId} className="folder-float__sub">{noteCount}</span>
         </span>
-        <button type="button" className="folder-float__trigger" aria-expanded={open} aria-label={`${label}, ${noteCount}`} onClick={() => setOpen(!open)} />
+        <button type="button" className="folder-float__trigger" aria-expanded={open} aria-label={`${label}, ${noteCount}`} onClick={toggle} />
       </div>
     </div>
   )

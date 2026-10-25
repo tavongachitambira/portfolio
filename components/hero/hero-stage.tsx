@@ -85,12 +85,12 @@ export function HeroStage({
     const floating = !isMobile && box !== null
 
   return (
-    <div ref={rootRef} className="relative z-20 mx-auto w-full max-w-136 overflow-visible lg:max-xl:max-w-112 lg:max-xl:h-[clamp(620px,76vh,760px)] xl:max-w-120 xl:h-[calc(100vh+2rem)] xl:max-h-none">
+    <div ref={rootRef} className="relative z-20 mx-auto w-full max-w-68 overflow-visible min-[420px]:max-sm:max-w-80 sm:max-md:max-w-92 md:max-lg:max-w-104 lg:max-xl:max-w-112 lg:max-xl:h-[clamp(620px,76vh,760px)] xl:max-w-120 xl:h-[calc(100vh+2rem)] xl:max-h-none">
       <motion.div
         style={floating ? { left: box.left, top: box.top, width: box.width, height: box.height, y: layerY } : undefined}
         className={cn(
           "flex flex-col items-center justify-center",
-          floating ? "pointer-events-none fixed z-10" : "relative w-full py-12 lg:h-full lg:py-0",
+          floating ? "pointer-events-none fixed z-10" : "relative w-full py-8 md:py-12 lg:h-full lg:py-0",
         )}
       >
         <Pane pane={stagePanes.web} progress={progress} />
@@ -164,19 +164,19 @@ function Pane({
         style={{ borderRadius: RADIUS }}
         aria-hidden
         className={cn(
-          "clay clay-lg max-lg:[--clay-elev:var(--e-md)] p-5",
+          "clay clay-lg max-lg:[--clay-elev:var(--e-md)] p-3.5 sm:p-4 md:p-5",
           isWeb
             ? "[--clay-surface:var(--tone-rose)]"
             : "[--clay-surface:var(--tone-plum)]",
           isWeb ? "animate-float-a -rotate-2" : "animate-float-b rotate-[1.6deg]",
         )}
       >
-        <span className="block text-xl font-bold tracking-tight">{pane.title}</span>
+        <span className="block text-base font-bold tracking-tight sm:text-lg md:text-xl">{pane.title}</span>
 
         {isWeb ? (
-          <BoardMock className="mt-3 text-[0.58rem] min-[420px]:text-[0.7rem] sm:text-[0.8rem]" />
+          <BoardMock className="mt-2 text-[0.46rem] min-[420px]:text-[0.54rem] sm:text-[0.6rem] md:text-[0.7rem] lg:text-[0.8rem] md:mt-3" />
         ) : (
-          <div className="clay-well mt-3 p-3 [--clay-radius:var(--clay-r-sm)]">
+          <div className="clay-well mt-2 p-2 [--clay-radius:var(--clay-r-sm)] sm:p-2.5 md:mt-3 md:p-3">
             <NeuralViz />
           </div>
         )}

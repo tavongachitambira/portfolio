@@ -116,6 +116,8 @@ export default function TearTicket({
   const controlled = torn !== undefined;
   const [inner, setInner] = useState(defaultTorn);
   const used = controlled ? torn : inner;
+  const usedRef = useRef(used);
+  usedRef.current = used;
   const [grabbing, setGrabbing] = useState(false);
   const [instant, setInstant] = useState(used);
   const [fit, setFit] = useState(1);
@@ -377,7 +379,8 @@ export default function TearTicket({
     s.snapped = [];
     s.snapAt = [];
     s.span = [];
-    if (stubRef.current) stubRef.current.style.visibility = '';
+    // a torn ticket must never get its stub back (reset() also runs when the card is re-shown)
+    if (stubRef.current) stubRef.current.style.visibility = usedRef.current ? 'hidden' : '';
     paint(performance.now());
   };
 
@@ -578,6 +581,7 @@ export default function TearTicket({
           <div
             ref={stubRef}
             className="tear-ticket__piece tear-ticket__piece--stub"
+            style={used ? { visibility: 'hidden' } : undefined}
             role="button"
             tabIndex={disabled || used ? -1 : 0}
             aria-label={ariaLabel}

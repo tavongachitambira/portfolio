@@ -1,38 +1,59 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { motion, useMotionValue, useSpring, useTransform, animate } from "framer-motion"
-import { useReducedMotion } from "framer-motion"
+import {
+  AnimatePresence,
+  animate,
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useSpring,
+  useTransform,
+} from "framer-motion"
 
-const TEXT = "Loading your experience."
-const MIN_MS = 1600 // minimum on-screen time so the fill is always readable
+import LetterGlitch from "@/components/LetterGlitch"
+import { roles } from "@/lib/data/profile"
+
+const NAME = "Tavonga Chitambira"
+const MIN_MS = 1800 // minimum on-screen time so the sequence is always readable
 const FILL_MS = 450 // final fill to 100% once ready
-const EXIT_S = 0.75
+const EXIT_S = 0.9
+const EASE = [0.76, 0, 0.24, 1] as const
+const EASE_OUT = [0.2, 0, 0, 1] as const
 
 type Phase = "loading" | "exit" | "done"
 
-// This module stays alive during Next.js client-side route changes, so returning
-// to Home does not replay the first-visit preloader.
+// Keep the loader out of client-side route changes, but replay it on full reloads.
 let hasCompletedInitialLoad = false
 
-/** First-visit preloader: dark surface, text that fills with colour as the page loads, shutter-lift exit. */
+/* First-visit preloader: a field of glitching letters fills the screen with the middle
+   cleared for content. The name, the cycling role, a status line that follows the real
+   progress, a counter and a progress line sit on top. On exit the screen lifts away. */
 export function InitialLoader() {
   const [phase, setPhase] = useState<Phase>(() => (hasCompletedInitialLoad ? "done" : "loading"))
   const [pct, setPct] = useState(0)
+  const [roleIndex, setRoleIndex] = useState(0)
+  const [dark, setDark] = useState(false)
   const reduceMotion = useReducedMotion()
 
   const target = useMotionValue(0) // 0..100
   const smooth = useSpring(target, { stiffness: 90, damping: 24, mass: 0.6 })
-  // Maps 0% -> 100% progress into a 110% -> -10% clip path range
-const clip = useTransform(smooth, (v) => {
-  const top = 110 - (v * 1.2); // Scaled so that at 100%, top is -10%
-  return `inset(${top}% 0 -10% 0)`;
-}); // fills bottom -> top
-
- 
-  const ring = useTransform(smooth, (v) => v / 100) // ring progress 0..1
+  const fill = useTransform(smooth, (v) => Math.min(Math.max(v / 100, 0), 1))
 
   useEffect(() => smooth.on("change", (v) => setPct(Math.round(v))), [smooth])
+
+  // match the glitch colours to the site theme
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDark(document.documentElement.classList.contains("dark"))
+  }, [])
+
+  // cycle the role line while loading
+  useEffect(() => {
+    if (phase !== "loading") return
+    const id = window.setInterval(() => setRoleIndex((i) => (i + 1) % roles.length), 1100)
+    return () => window.clearInterval(id)
+  }, [phase])
 
   useEffect(() => {
     if (hasCompletedInitialLoad) return
@@ -51,7 +72,7 @@ const clip = useTransform(smooth, (v) => {
       animate(target, 100, { duration: FILL_MS / 1000, ease: "easeOut" })
       hasCompletedInitialLoad = true
       later(() => setPhase(reduceMotion ? "done" : "exit"), FILL_MS + 250)
-      later(() => setPhase("done"), FILL_MS + 250 + (reduceMotion ? 0 : EXIT_S * 1000 + 50))
+      later(() => setPhase("done"), FILL_MS + 250 + (reduceMotion ? 0 : EXIT_S * 1000 + 150))
     }
 
     const onLoad = () =>
@@ -87,57 +108,74 @@ const clip = useTransform(smooth, (v) => {
   }, [phase])
 
   if (phase === "done") return null
-const textClass ="text-center font-sans text-3xl font-bold uppercase tracking-[0.12em] sm:text-4xl"
+
+  const exiting = phase === "exit"
+
   return (
     <motion.div
+      data-initial-loader
       role="status"
       aria-busy="true"
       aria-label="Loading Tavonga Chitambira's portfolio"
-      className="fixed inset-0 z-100 grid place-items-center overflow-hidden bg-background px-6"
-      initial={{ clipPath: "inset(0% 0 0 0)" }}
-      animate={{ clipPath: phase === "exit" ? "inset(0 0 100% 0)" : "inset(0% 0 0 0)" }} // lifts up
-      transition={{ duration: EXIT_S, ease: [0.76, 0, 0.24, 1] }}
+      className="bg-background fixed inset-0 z-100 overflow-hidden"
+      animate={{ y: exiting ? "-100%" : "0%" }}
+      transition={{ duration: reduceMotion ? 0 : EXIT_S, ease: EASE }}
     >
-      <div className="w-full max-w-3xl">
-        {/* mark: ring tracks progress, "T" draws itself */}
-        <svg viewBox="0 0 80 80" className="mx-auto mb-10 size-25" fill="none" aria-hidden="true">
-          <circle cx="40" cy="40" r="36" stroke="currentColor" strokeWidth="1.5" className="text-foreground/10" />
-          <motion.circle
-            cx="40"
-            cy="40"
-            r="36"
-            strokeWidth="2"
-            strokeLinecap="round"
-            className="stroke-primary"
-            style={{ pathLength: ring, rotate: -90, transformOrigin: "40px 40px" }}
-          />
-          <motion.path
-            d="M26 29 H54 M40 29 V54"
-            strokeWidth="3"
-            strokeLinecap="round"
-            className="stroke-primary"
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={{ pathLength: 1, opacity: 1 }}
-            transition={{ duration: reduceMotion ? 0 : 0.9, delay: 0.2, ease: [0.2, 0, 0, 1] }}
-          />
-        </svg>
+      {/* glitching letter field, middle cleared so the content stays readable */}
+      <div aria-hidden className="absolute inset-0">
+        <LetterGlitch
+          lightMode={!dark}
+          glitchAmount={0.6}
+          speed={1}
+          flow={0.5}
+          density={0.9}
+          baseOpacity={0.18}
+          centerFade={0.9}
+          edgeFade={0.1}
+          clickEffect="none"
+          fontSize={14}
+        />
+      </div>
 
-        <div className="relative">
-          {/* dim base text */}
-          <p className={`${textClass} text-foreground/15`}>{TEXT}</p>
-          {/* filled text, revealed bottom -> top */}
-          <motion.p
-            aria-hidden="true"
-            className={`${textClass} absolute inset-0 text-primary`}
-            style={{ clipPath: clip }}
-          >
-            {TEXT}
-          </motion.p>
+      {/* content */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
+        <motion.h1
+          aria-hidden
+          className="text-4xl font-extrabold tracking-tight sm:text-6xl"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: reduceMotion ? 0 : 0.7, delay: reduceMotion ? 0 : 0.2, ease: EASE_OUT }}
+        >
+          {NAME}
+        </motion.h1>
+
+        <div className="text-primary mt-3 h-6 overflow-hidden text-base font-medium sm:text-lg">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.p
+              key={roleIndex}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: reduceMotion ? 0 : 0.25 }}
+            >
+              {roles[roleIndex]}
+            </motion.p>
+          </AnimatePresence>
         </div>
 
-        <div className="mt-6 flex items-center justify-between font-mono text-[11px] tracking-[0.2em] text-muted-foreground uppercase">
-          <span>Tavonga / Portfolio</span>
-          <span className="tabular-nums">{String(pct).padStart(3, "0")}%</span>
+        <div className="mt-10 w-full max-w-xs">
+          <div className="bg-border h-0.5 w-full overflow-hidden rounded-full">
+            <motion.div className="bg-primary h-full w-full origin-left" style={{ scaleX: fill }} />
+          </div>
+          <div className="mt-3 flex items-center justify-between text-sm">
+            <span
+              className="text-foreground font-semibold"
+              style={{ textShadow: "0 2px 12px rgb(0 0 0 / 45%)" }}
+            >
+              Loading your experience.
+            </span>
+            <span className="tabular-nums">{pct}%</span>
+          </div>
         </div>
       </div>
     </motion.div>

@@ -19,23 +19,14 @@ export const posts: Post[] = [
     venue: "Personal blog",
     date: "2026-09-21",
     href: "#",
-  },{
-    title: "Why crosrs-tenant requests should return 404, not 403",
-    summary: "A short note on information leaks in multi-tenant APIs and how SyncBoard avoids them.",
-    kind: "Article",
-    venue: "Personal blog",
-    date: "2026-09-24",
-    href: "#",
-  },{
-    title: "Why crotss-tenant requests should return 404, not 403",
-    summary: "A short note on information leaks in multi-tenant APIs and how SyncBoard avoids them.",
-    kind: "Article",
-    venue: "Personal blog",
-    date: "2026-09-23",
-    href: "#",
-  },
+  }
  
 ]
+
+/** A post is only linkable once it has a real URL. "#" or "" means "not uploaded yet". */
+export const isPublished = (p: Post) => Boolean(p.href) && p.href !== "#"
+
+export const UNPUBLISHED_HINT = "Yet to upload. Coming soon."
 
 export const WRITING_PREVIEW_COUNT = 4
 export const previewPosts = posts.slice(0, WRITING_PREVIEW_COUNT)
