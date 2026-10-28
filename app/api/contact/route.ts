@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL || "Portfolio <onboarding@resend.dev>",
       to: toEmail,
-      reply_to: email,
+      replyTo: email,
       subject: `Portfolio message from ${name}`,
       html: `
         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #1f2937;">
