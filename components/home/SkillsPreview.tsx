@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import FolderFloat from "@/components/FolderFloat"
 import { useIsMobile } from "@/hooks/useIsMobile"
@@ -11,6 +11,10 @@ export function SkillsPreview() {
   const [openGroup, setOpenGroup] = useState<string | null>(null)
   const isMobile = useIsMobile()
 
+  useEffect(() => {
+    setOpenGroup(null)
+  }, [isMobile])
+
   return (
     <div className="grid gap-x-6 gap-y-20 pt-12 sm:grid-cols-2">
       {skillGroups.slice(0, SKILLS_PREVIEW_GROUPS).map((group, i) => (
@@ -19,6 +23,7 @@ export function SkillsPreview() {
           className="flex min-h-48 items-end justify-center"
         >
           <FolderFloat
+            key={`${isMobile ? "mobile" : "desktop"}-${group.id}`}
             items={group.items.map((skill) => ({
               label: `${skill.name}${skill.learning ? " · learning" : ""}`,
             }))}

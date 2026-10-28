@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import FolderFloat from "@/components/FolderFloat"
 import { useIsMobile } from "@/hooks/useIsMobile"
@@ -11,9 +11,14 @@ export function SkillMeters() {
   const [openGroup, setOpenGroup] = useState<string | null>(null)
   const isMobile = useIsMobile()
 
+  useEffect(() => {
+    setOpenGroup(null)
+  }, [isMobile])
+
   return <section aria-label="Skill sets" className="grid gap-x-8 gap-y-24 py-16 sm:grid-cols-2 lg:grid-cols-3">
     {skillGroups.map((group, index) => <div key={group.id} className="flex min-h-52 items-end justify-center">
       <FolderFloat
+        key={`${isMobile ? "mobile" : "desktop"}-${group.id}`}
         items={group.items.map((skill) => ({ label: `${skill.name}${skill.learning ? " · learning" : ""}` }))}
         label={group.title}
         sublabel={group.blurb}

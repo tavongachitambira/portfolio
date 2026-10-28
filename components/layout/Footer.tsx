@@ -19,8 +19,9 @@ const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export function Footer() {
   const [notice, setNotice] = useState("")
   const [errors, setErrors] = useState<ContactErrors>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const data = new FormData(event.currentTarget)
     const name = String(data.get("name") ?? "").trim()
@@ -39,11 +40,30 @@ export function Footer() {
     }
 
     setErrors({})
-    const subject = encodeURIComponent(`Portfolio message from ${name}`)
-    const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`)
+    setIsSubmitting(true)
+    setNotice("Sending your message...")
 
-    setNotice("Opening your email app with the message prepared.")
-    window.location.href = `mailto:${site.email}?subject=${subject}&body=${body}`
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, message }),
+      })
+
+      if (!response.ok) {
+        throw new Error("There was a problem sending the message.")
+      }
+
+      event.currentTarget.reset()
+      setNotice("Your message has been sent successfully.")
+    } catch (error) {
+      const subject = encodeURIComponent(`Portfolio message from ${name}`)
+      const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`)
+      setNotice("The email service is unavailable right now. Your email app has been opened instead.")
+      window.location.href = `mailto:${site.email}?subject=${subject}&body=${body}`
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -69,24 +89,27 @@ export function Footer() {
             <div className="grid gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="contact-name">Name</Label>
-                <Input id="contact-name" name="name" autoComplete="name" aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? "contact-name-error" : undefined} onChange={() => setErrors((current) => ({ ...current, name: undefined }))} />
+                <Input id="contact-name" name="name" autoComplete="name" aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? "contact-name-error" : undefined} onChange={() => setErrors((prev) => ({ ...prev, name: undefined }))} />
                 {errors.name && <p id="contact-name-error" className="text-xs text-destructive">{errors.name}</p>}
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="contact-email">Email</Label>
-                <Input id="contact-email" name="email" type="email" autoComplete="email" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? "contact-email-error" : undefined} onChange={() => setErrors((current) => ({ ...current, email: undefined }))} />
+                <Input id="contact-email" name="email" type="email" autoComplete="email" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? "contact-email-error" : undefined} onChange={() => setErrors((prev) => ({ ...prev, email: undefined }))} />
                 {errors.email && <p id="contact-email-error" className="text-xs text-destructive">{errors.email}</p>}
               </div>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="contact-message">What&apos;s on your mind?</Label>
-              <Textarea id="contact-message" name="message" rows={4} maxLength={1000} aria-invalid={Boolean(errors.message)} aria-describedby={errors.message ? "contact-message-error" : undefined} onChange={() => setErrors((current) => ({ ...current, message: undefined }))} />
+              <Textarea id="contact-message" name="message" rows={4} maxLength={1000} aria-invalid={Boolean(errors.message)} aria-describedby={errors.message ? "contact-message-error" : undefined} onChange={() => setErrors((prev) => ({ ...prev, message: undefined }))} />
               {errors.message && <p id="contact-message-error" className="text-xs text-destructive">{errors.message}</p>}
             </div>
             <div className="flex flex-wrap items-center gap-3 pt-1">
-              <Button type="submit">Send message <Send aria-hidden="true" /></Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Sending..." : "Send message"}
+                <Send aria-hidden="true" />
+              </Button>
               <p id="connect-note" className="text-xs text-muted-foreground" aria-live="polite">
-                {notice || `Sends via your email app to ${site.email}.`}
+                {notice || `Sends via a secure email provider when configured, otherwise opens your email app to ${site.email}.`}
               </p>
             </div>
           </form>
@@ -94,8 +117,8 @@ export function Footer() {
       </section>
 
       <div className="flex flex-col gap-3 pt-8 text-xs text-muted-foreground lg:flex-row lg:items-center lg:justify-between">
-        <p className="order-2 text-[11px] tracking-wide text-muted-foreground/70 lg:order-1">© 2026 
-        <span className="font-semibold pl-1">Tavonga Chitambira        </span>
+        <p className="order-2 text-[11px] tracking-wide text-muted-foreground/70 lg:order-1">© 2026
+        <span className="font-semibold pl-1">Tavonga Chitambira</span>
         . All rights reserved.</p>
         <p className="order-1 lg:order-2">
           <a href="https://github.com/cypherx72/portfolio" target="_blank" rel="noopener noreferrer" className="transition-colors font-medium tracking-wide text-[11px] hover:text-primary">View Source</a>
