@@ -23,7 +23,9 @@ export function Footer() {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const data = new FormData(event.currentTarget)
+    // Capture now: React sets event.currentTarget to null once the handler yields at its first await.
+    const form = event.currentTarget
+    const data = new FormData(form)
     const name = String(data.get("name") ?? "").trim()
     const email = String(data.get("email") ?? "").trim()
     const message = String(data.get("message") ?? "").trim()
@@ -51,12 +53,14 @@ export function Footer() {
       })
 
       if (!response.ok) {
-        throw new Error("There was a problem sending the message.")
+        const result = await response.json().catch(() => null)
+        throw new Error(result?.error ?? "There was a problem sending the message.")
       }
 
-      event.currentTarget.reset()
+      form.reset()
       setNotice("Your message has been sent successfully.")
     } catch (error) {
+      console.error("Contact form error:", error)
       const subject = encodeURIComponent(`Portfolio message from ${name}`)
       const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`)
       setNotice("The email service is unavailable right now. Your email app has been opened instead.")
