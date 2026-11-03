@@ -43,7 +43,7 @@ export function Footer() {
 
     setErrors({})
     setIsSubmitting(true)
-    setNotice("Sending your message...")
+    setNotice("Sending…")
 
     try {
       const response = await fetch("/api/contact", {
@@ -58,12 +58,12 @@ export function Footer() {
       }
 
       form.reset()
-      setNotice("Your message has been sent successfully.")
+      setNotice("Message sent. Thank you!")
     } catch (error) {
       console.error("Contact form error:", error)
       const subject = encodeURIComponent(`Portfolio message from ${name}`)
       const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`)
-      setNotice("The email service is unavailable right now. Your email app has been opened instead.")
+      setNotice("Couldn't send. Opening your email app instead.")
       window.location.href = `mailto:${site.email}?subject=${subject}&body=${body}`
     } finally {
       setIsSubmitting(false)
@@ -112,8 +112,9 @@ export function Footer() {
                 {isSubmitting ? "Sending..." : "Send message"}
                 <Send aria-hidden="true" />
               </Button>
+              {/* status only: stays empty (but mounted, so screen readers hear updates) until there is something to say */}
               <p id="connect-note" className="text-xs text-muted-foreground" aria-live="polite">
-                {notice || `Sends via a secure email provider when configured, otherwise opens your email app to ${site.email}.`}
+                {notice}
               </p>
             </div>
           </form>
