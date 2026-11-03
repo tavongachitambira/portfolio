@@ -11,3 +11,13 @@ References:
 - https://registry.npmjs.org/next
 
 When this task ends, report its result once. After completing the requested upgrade and all applicable verification, run `pnpm --loglevel=error dlx next@16.5.0-canary.27 internal report-agent-upgrade d8e7f26f-1db2-4c77-8460-af1d0b670e9f success`. If the attempted upgrade remains unsuccessful after repairs or verification fails, run `pnpm --loglevel=error dlx next@16.5.0-canary.27 internal report-agent-upgrade d8e7f26f-1db2-4c77-8460-af1d0b670e9f failure`. If you stop for duplicate work, user cancellation, or an unavailable prerequisite, do not report success or failure. Explain the result to the user separately; never include project details or error text in the telemetry command.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
