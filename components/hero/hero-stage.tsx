@@ -22,11 +22,24 @@ import { cn } from "@/lib/utils"
    - the web block starts first: it swings left around the screw, falls
      toward its heavy side, and drops out of the viewport
    - the ML block follows a bit later: it swings right around the screw
-   Scrolling back up reverses everything. */
+   Scrolling back up reverses everything.
+
+   On desktop the blocks live in a fixed layer that mirrors the in-flow slot (rootRef).
+   Both the layer's box and the swing pivots are re-measured whenever the layout can have
+   changed, never cached from the first paint. */
 
 const RADIUS = 36 // = --clay-r-lg
 const SECTION_ID = "profile"
 const TURNS = 3 // screw rotations over the scroll range
+
+type Box = { left: number; top: number; width: number; height: number }
+type Pivots = { web: string; ml: string }
+
+const sameBox = (a: Box, b: Box) =>
+  Math.abs(a.left - b.left) < 0.5 &&
+  Math.abs(a.top - b.top) < 0.5 &&
+  Math.abs(a.width - b.width) < 0.5 &&
+  Math.abs(a.height - b.height) < 0.5
 
 export function HeroStage({
   scrollContainerRef,
@@ -36,9 +49,15 @@ export function HeroStage({
   isMobile: boolean
 }) {
   const rootRef = useRef<HTMLDivElement>(null)
+  const seamRef = useRef<HTMLDivElement>(null)
+  const screwRef = useRef<HTMLDivElement>(null)
+  const webRef = useRef<HTMLDivElement>(null)
+  const mlRef = useRef<HTMLDivElement>(null)
+
   const scrollY = useMotionValue(0)
   const [end, setEnd] = useState(700)
-    const [box, setBox] = useState<{ left: number; top: number; width: number; height: number } | null>(null)
+  const [box, setBox] = useState<Box | null>(null)
+  const [pivots, setPivots] = useState<Pivots | null>(null)
 
   useEffect(() => {
     const scroller = isMobile ? null : scrollContainerRef.current
@@ -48,32 +67,71 @@ export function HeroStage({
     const onScroll = () => scrollY.set(read())
 
     function measure() {
-      const el = document.getElementById(SECTION_ID)
+      // scroll distance over which the screw comes undone
+      const section = document.getElementById(SECTION_ID)
       const base = scroller ? scroller.getBoundingClientRect().top : 0
       const viewportHeight = scroller?.clientHeight ?? window.innerHeight
-      const top = el ? el.getBoundingClientRect().top - base + read() : viewportHeight
+      const top = section ? section.getBoundingClientRect().top - base + read() : viewportHeight
       setEnd(Math.max(top - viewportHeight * 0.35, 200))
-    }
 
-    onScroll()
-    measure()
-          const root = rootRef.current
+      // desktop: the layer is fixed, so it has to be told where the in-flow slot currently is
+      const root = rootRef.current
       if (scroller && root) {
         const r = root.getBoundingClientRect()
-        setBox({ left: r.left, top: r.top + scroller.scrollTop, width: r.width, height: r.height })
+        const next = { left: r.left, top: r.top + scroller.scrollTop, width: r.width, height: r.height }
+        setBox((prev) => (prev && sameBox(prev, next) ? prev : next))
       } else {
         setBox(null)
       }
 
+      // swing pivot = the screw, in each pane's own coordinates. offset* values come from
+      // layout, so they ignore the rotate/translate the panes are wearing mid-scroll.
+      const seam = seamRef.current
+      const screw = screwRef.current
+      const web = webRef.current
+      const ml = mlRef.current
+      if (seam && screw && web && ml) {
+        const x = seam.offsetLeft + screw.offsetLeft
+        const y = seam.offsetTop + screw.offsetTop
+        const next = {
+          web: `${x - web.offsetLeft}px ${y - web.offsetTop}px`,
+          ml: `${x - ml.offsetLeft}px ${y - ml.offsetTop}px`,
+        }
+        setPivots((prev) => (prev && prev.web === next.web && prev.ml === next.ml ? prev : next))
+      }
+    }
+
+    let disposed = false
+    let frame = 0
+    const remeasure = () => {
+      if (disposed) return
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(measure)
+    }
+
+    onScroll()
+    measure()
+
     target.addEventListener("scroll", onScroll, { passive: true })
-    window.addEventListener("resize", measure)
+    window.addEventListener("resize", remeasure)
+
+    // layout also moves without a window resize: breakpoint jumps, fonts arriving, content reflowing
+    const observer = new ResizeObserver(remeasure)
+    for (const el of [rootRef.current, scroller, webRef.current, mlRef.current]) {
+      if (el) observer.observe(el)
+    }
+    void document.fonts?.ready.then(remeasure)
+
     return () => {
+      disposed = true
+      cancelAnimationFrame(frame)
+      observer.disconnect()
       target.removeEventListener("scroll", onScroll)
-      window.removeEventListener("resize", measure)
+      window.removeEventListener("resize", remeasure)
     }
   }, [isMobile, scrollContainerRef, scrollY])
 
-    const layerY = useTransform(scrollY, (v) => -v) // fixed layer follows the content
+  const layerY = useTransform(scrollY, (v) => -v) // fixed layer follows the content
   const raw = useTransform(scrollY, [0, end], [0, 1], { clamp: true })
   const progress = useSpring(raw, { stiffness: 70, damping: 22, mass: 0.8 })
 
@@ -82,7 +140,7 @@ export function HeroStage({
   const screwY = useTransform(progress, [0, 0.5, 1], [0, -10, -24])
   const screwOpacity = useTransform(progress, [0, 0.75, 1], [1, 1, 0])
 
-    const floating = !isMobile && box !== null
+  const floating = !isMobile && box !== null
 
   return (
     <div ref={rootRef} className="relative z-20 mx-auto w-full max-w-68 overflow-visible min-[420px]:max-sm:max-w-80 sm:max-md:max-w-92 md:max-lg:max-w-104 lg:max-xl:max-w-112 lg:max-xl:h-[clamp(620px,76vh,760px)] xl:max-w-120 xl:h-[calc(100vh+2rem)] xl:max-h-none">
@@ -93,11 +151,14 @@ export function HeroStage({
           floating ? "pointer-events-none fixed z-10" : "relative w-full py-8 md:py-12 lg:h-full lg:py-0",
         )}
       >
-        <Pane pane={stagePanes.web} progress={progress} />
+        <Pane pane={stagePanes.web} progress={progress} origin={pivots?.web} paneRef={webRef} />
 
         {/* zero-height spacer sitting exactly on the seam between the blocks */}
-        <div aria-hidden className="relative z-20 h-0">
-          <div className="pointer-events-none absolute top-2.5 left-1/2 -translate-x-1/2 -translate-y-1/2">
+        <div ref={seamRef} aria-hidden className="relative z-20 h-0">
+          <div
+            ref={screwRef}
+            className="pointer-events-none absolute top-2.5 left-1/2 -translate-x-1/2 -translate-y-1/2"
+          >
             <motion.div
               style={{
                 rotate: screwRotate,
@@ -112,7 +173,7 @@ export function HeroStage({
           </div>
         </div>
 
-        <Pane pane={stagePanes.ml} progress={progress} />
+        <Pane pane={stagePanes.ml} progress={progress} origin={pivots?.ml} paneRef={mlRef} />
       </motion.div>
     </div>
   )
@@ -121,9 +182,14 @@ export function HeroStage({
 function Pane({
   pane,
   progress,
+  origin,
+  paneRef,
 }: {
   pane: StagePane
   progress: MotionValue<number>
+  /** the screw's position in this pane's own coordinates (px), measured by HeroStage */
+  origin?: string
+  paneRef: RefObject<HTMLDivElement | null>
 }) {
   const isWeb = pane.side === "web"
 
@@ -141,18 +207,12 @@ function Pane({
   const blurPx = useTransform(t, [0, 0.55, 1], [0, 0, 8])
   const filter = useTransform(blurPx, (v) => `blur(${v}px)`)
 
-  // transform-origin = the screw, in each pane's own coordinates.
-  // Panes are 84% wide of the container; the screw is at 50% of the container,
-  // on the seam between them. ML pane sits 16% in and 1.25rem (mt-5) below the seam.
-  const transformOrigin = isWeb
-    ? "59.5% calc(100% + 0.625rem)"
-    : "40.5% calc(-1.25rem + 0.625rem)"
-
   return (
     // pivot layer: owns only the swing/fall/fade, so the entry animation below is untouched
     <motion.div
-      style={{ rotate, x, y, opacity, filter, transformOrigin }}
-           className={cn(
+      ref={paneRef}
+      style={{ rotate, x, y, opacity, filter, transformOrigin: origin }}
+      className={cn(
         "relative w-full min-w-0 will-change-transform sm:w-[90%]",
         isWeb ? "z-10" : "z-5 mt-5 ml-auto",
       )}
