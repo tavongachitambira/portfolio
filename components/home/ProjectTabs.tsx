@@ -1,12 +1,14 @@
 "use client"
 
 import { useRef, useState, type KeyboardEvent } from "react"
+import Link from "next/link"
 import { AnimatePresence, motion } from "framer-motion"
 import { FaGithub } from "react-icons/fa"
 import { MdLink } from "react-icons/md"
 
 import { Badge } from "@/components/ui/badge"
-import { previewProjects, projectPeriod } from "@/lib/data/projects"
+import { caseStudies } from "@/lib/data/case-studies"
+import { previewProjects, projectPeriod, projectSlug } from "@/lib/data/projects"
 import { cn } from "@/lib/utils"
 
 /* Vertical tabs on desktop, a horizontal strip on phones. */
@@ -118,6 +120,15 @@ export function ProjectTabs() {
                 </li>
               ))}
             </ul>
+
+            {caseStudies[projectSlug(project)] && (
+              <Link
+                href={`/projects/${projectSlug(project)}`}
+                className="mt-5 inline-block text-sm font-semibold text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+              >
+                Read the case study →
+              </Link>
+            )}
 
             <ul className="mt-5 flex flex-wrap gap-2">
               {project.tags.map((tag) => (

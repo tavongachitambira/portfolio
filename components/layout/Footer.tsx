@@ -8,57 +8,78 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { useTurnstile } from "@/hooks/useTurnstile"
+import { contactTurnstileAction, validateContact, type ContactErrors } from "@/lib/contact"
 import { motionEase } from "@/lib/motion"
 import { site } from "@/lib/site"
 
-type ContactField = "name" | "email" | "message"
-type ContactErrors = Partial<Record<ContactField, string>>
-
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
 export function Footer() {
   const [notice, setNotice] = useState("")
   const [errors, setErrors] = useState<ContactErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const { attach: attachTurnstile, prepare: prepareTurnstile, getToken, reset: resetTurnstile, enabled: turnstileOn } =
+    useTurnstile({ siteKey: turnstileSiteKey, action: contactTurnstileAction })
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     // Capture now: React sets event.currentTarget to null once the handler yields at its first await.
     const form = event.currentTarget
     const data = new FormData(form)
-    const name = String(data.get("name") ?? "").trim()
-    const email = String(data.get("email") ?? "").trim()
-    const message = String(data.get("message") ?? "").trim()
-    const nextErrors: ContactErrors = {}
-
-    if (name.length < 2) nextErrors.name = "Please enter your name."
-    if (!emailPattern.test(email)) nextErrors.email = "Enter a valid email address."
-    if (!message) nextErrors.message = "Please add a message."
-
-    if (Object.keys(nextErrors).length) {
-      setErrors(nextErrors)
+    // same rules as the API route, so what passes here passes there
+    const checked = validateContact({
+      name: data.get("name"),
+      email: data.get("email"),
+      message: data.get("message"),
+    })
+    if (!checked.ok) {
+      setErrors(checked.errors)
       setNotice("")
       return
     }
+    const { name, email, message } = checked.value
+    const website = String(data.get("website") ?? "") // honeypot: people never see it
 
     setErrors({})
     setIsSubmitting(true)
-    setNotice("Sending…")
 
     try {
+      let turnstileToken = ""
+      if (turnstileOn) {
+        setNotice("Verifying…")
+        turnstileToken = await getToken()
+      }
+
+      setNotice("Sending…")
       const response = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, message }),
+        body: JSON.stringify({ name, email, message, website, turnstileToken }),
       })
 
-      if (!response.ok) {
-        const result = await response.json().catch(() => null)
-        throw new Error(result?.error ?? "There was a problem sending the message.")
+      if (response.ok) {
+        form.reset()
+        setNotice("Message sent. Thank you!")
+        return
       }
 
-      form.reset()
-      setNotice("Message sent. Thank you!")
+      // Problems the visitor can act on stay on the page. Anything else falls through to email.
+      const result = await response.json().catch(() => null)
+      if (response.status === 400 && result?.fields) {
+        setErrors(result.fields)
+        setNotice("")
+        return
+      }
+      if (response.status === 429) {
+        setNotice("Too many messages. Please try again in a few minutes.")
+        return
+      }
+      if (response.status === 403) {
+        setNotice("Verification failed. Reload the page and try again.")
+        return
+      }
+      throw new Error(`Contact API responded ${response.status}`)
     } catch (error) {
       console.error("Contact form error:", error)
       const subject = encodeURIComponent(`Portfolio message from ${name}`)
@@ -67,6 +88,7 @@ export function Footer() {
       window.location.href = `mailto:${site.email}?subject=${subject}&body=${body}`
     } finally {
       setIsSubmitting(false)
+      if (turnstileOn) resetTurnstile() // tokens are single-use
     }
   }
 
@@ -89,7 +111,13 @@ export function Footer() {
             </p>
           </div>
 
-          <form noValidate onSubmit={submit} className="grid gap-4" aria-describedby="connect-note">
+          <form
+            noValidate
+            onSubmit={submit}
+            onFocusCapture={prepareTurnstile}
+            className="grid gap-4"
+            aria-describedby="connect-note"
+          >
             <div className="grid gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="contact-name">Name</Label>
@@ -107,6 +135,13 @@ export function Footer() {
               <Textarea id="contact-message" name="message" rows={4} maxLength={1000} aria-invalid={Boolean(errors.message)} aria-describedby={errors.message ? "contact-message-error" : undefined} onChange={() => setErrors((prev) => ({ ...prev, message: undefined }))} />
               {errors.message && <p id="contact-message-error" className="text-xs text-destructive">{errors.message}</p>}
             </div>
+            {/* honeypot: off-screen and out of the tab order, so only bots fill it in */}
+            <div aria-hidden className="pointer-events-none absolute -left-[9999px] size-px overflow-hidden opacity-0">
+              <label htmlFor="contact-website">Website</label>
+              <input id="contact-website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+            </div>
+            {/* Turnstile mounts here; it stays invisible unless Cloudflare needs a click */}
+            <div ref={attachTurnstile} />
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Sending..." : "Send message"}
