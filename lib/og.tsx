@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises"
 import { join } from "node:path"
+import { cacheLife } from "next/cache"
 import { ImageResponse } from "next/og"
 
 import { site } from "@/lib/site"
@@ -10,12 +11,20 @@ import { site } from "@/lib/site"
 
 export const ogSize = { width: 1200, height: 630 }
 
-const fonts = () => {
+/* Reading the font files at request time would make every share image a dynamic route (Cache
+   Components treats uncached IO that way). Inside "use cache" the read is part of the build, so
+   each image is prerendered once and served as a static file. The files ship with the deployment
+   and never change under it, hence cacheLife("max"). */
+async function fonts() {
+  "use cache"
+  cacheLife("max")
+
   const dir = join(process.cwd(), "assets/fonts")
-  return Promise.all([
-    readFile(join(dir, "plus-jakarta-sans-latin-800-normal.woff")),
-    readFile(join(dir, "plus-jakarta-sans-latin-500-normal.woff")),
-  ])
+  const read = async (file: string) => {
+    const buffer = await readFile(join(dir, file))
+    return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer
+  }
+  return Promise.all([read("plus-jakarta-sans-latin-800-normal.woff"), read("plus-jakarta-sans-latin-500-normal.woff")])
 }
 
 /** The site owner's name as ASCII bits, wrapped into columns for the background texture. */
