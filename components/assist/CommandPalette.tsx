@@ -47,9 +47,14 @@ const icons: Record<string, LucideIcon | IconType> = {
   instagram: FaInstagram,
 }
 
+/* Pages we have left stay mounted but hidden (Next keeps them to restore their state), so an id such as
+   #connect can exist twice. Pick the copy that is actually on screen. */
+const visibleById = (id: string) =>
+  Array.from(document.querySelectorAll<HTMLElement>(`#${CSS.escape(id)}`)).find((el) => el.getClientRects().length > 0) ?? null
+
 /* Scrolls to a section of the home page, or goes there first when on another page. */
 function goToSection(id: string, push: (href: string) => void) {
-  const el = document.getElementById(id)
+  const el = visibleById(id)
   if (window.location.pathname === "/" && el) {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
     // every section carries a scroll-margin, so this lands exactly where the nav links do
