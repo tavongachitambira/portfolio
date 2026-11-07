@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { Suspense } from "react"
 import { ArrowUpRight } from "lucide-react"
 
 import { PageShell } from "@/components/layout/PageShell"
@@ -31,7 +32,36 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 const h2 = "mb-5 font-mono text-xs font-bold tracking-[0.18em] text-primary uppercase"
 
-export default async function CaseStudyPage({ params }: { params: Promise<{ slug: string }> }) {
+type Params = Promise<{ slug: string }>
+
+/* Reading `params` is kept inside <Suspense>, so the route has a shell that doesn't depend on the URL
+   (Next's instant-navigation check). Known slugs are prerendered, so this fallback only ever shows
+   for a slug that hasn't been generated. */
+export default function CaseStudyPage({ params }: { params: Params }) {
+  return (
+    <Suspense fallback={<CaseStudyFallback />}>
+      <CaseStudy params={params} />
+    </Suspense>
+  )
+}
+
+const bar = "block animate-pulse rounded-md bg-foreground/10 motion-reduce:animate-none"
+
+function CaseStudyFallback() {
+  return (
+    <PageShell
+      eyebrow="Case study"
+      title={<span aria-hidden className={`${bar} h-10 w-2/3 sm:h-12`} />}
+      intro={<span aria-hidden className={`${bar} h-5 w-full max-w-md`} />}
+    >
+      <p role="status" className="sr-only">
+        Loading case study
+      </p>
+    </PageShell>
+  )
+}
+
+async function CaseStudy({ params }: { params: Params }) {
   const project = find((await params).slug)
   if (!project) notFound()
 
