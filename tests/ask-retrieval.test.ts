@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import { buildCorpus } from "@/lib/ask/corpus"
 import { retrieve } from "@/lib/ask/retrieve"
+import { askSuggestions } from "@/lib/ask/suggestions"
 
 /* The eval set: real questions a visitor might type, and where the answer lives.
    If you change the data or the ranker, this tells you whether Ask still finds the right passage. */
@@ -49,6 +50,24 @@ describe("retrieval eval", () => {
 
   it.each(outOfScope)("finds nothing for %j, so the model is never called", (question) => {
     expect(retrieve(question)).toEqual([])
+  })
+})
+
+describe("starter questions", () => {
+  const target: Record<string, string[]> = {
+    "What is SyncBoard?": ["project-syncboard"],
+    "How does SyncBoard keep tenants apart?": ["project-syncboard-decision-5"],
+    "What is he learning right now?": ["skills-ml", "skills-tooling"],
+    "How can I contact him?": ["contact"],
+  }
+
+  it("lists exactly the questions this test knows the answers to", () => {
+    expect([...askSuggestions].sort()).toEqual(Object.keys(target).sort())
+  })
+
+  it.each(askSuggestions)("%s finds its passage, so a chip never dead-ends", (question) => {
+    const ids = retrieve(question, 3).map((h) => h.chunk.id)
+    expect(target[question].some((id) => ids.includes(id))).toBe(true)
   })
 })
 
