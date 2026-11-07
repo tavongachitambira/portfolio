@@ -5,7 +5,8 @@ import { retrieve } from "@/lib/ask/retrieve"
 
 /* The eval set: real questions a visitor might type, and where the answer lives.
    If you change the data or the ranker, this tells you whether Ask still finds the right passage. */
-const answerable: [question: string, expectedInTop3: string][] = [
+/** Any one of the listed passages is a correct answer (e.g. "currently learning" lives in two groups). */
+const answerable: [question: string, expectedInTop3: string | string[]][] = [
   ["What is SyncBoard?", "project-syncboard"],
   ["What stack does SyncBoard use?", "project-syncboard-stack"],
   ["How does SyncBoard handle conflicting edits?", "project-syncboard-decision-2"],
@@ -13,16 +14,13 @@ const answerable: [question: string, expectedInTop3: string][] = [
   ["How does SyncBoard scale websockets?", "project-syncboard-decision-1"],
   ["How is billing metered without blocking sockets?", "project-syncboard-decision-3"],
   ["How does authentication work in SyncBoard?", "project-syncboard-decision-4"],
-  ["What is EduCampus?", "project-educampus"],
-  ["What is CampusPilot?", "project-educampus"],
-  ["How many issues did the EduCampus audit fix?", "project-educampus-status"],
-  ["How did you handle auth between Next.js and Express?", "project-educampus-decision-3"],
+  ["Is SyncBoard finished or still in progress?", "project-syncboard-status"],
   ["What's your email address?", "contact"],
   ["Where can I find your GitHub and LinkedIn?", "contact"],
   ["Do you have a resume?", "contact"],
   ["Is Tavonga learning machine learning?", "about"],
   ["What frontend skills does he have?", "skills-frontend"],
-  ["Which languages and tools is he learning right now?", "skills-ml"],
+  ["Which languages and tools is he learning right now?", ["skills-ml", "skills-tooling"]],
   ["Has he published any articles?", "writing-1"],
   ["What is this website built with?", "site"],
   ["Is there a keyboard shortcut for the command palette?", "site"],
@@ -41,11 +39,11 @@ const outOfScope = [
 describe("retrieval eval", () => {
   it.each(answerable)("%s", (question, expected) => {
     const ids = retrieve(question, 3).map((h) => h.chunk.id)
-    expect(ids).toContain(expected)
+    expect([expected].flat().some((id) => ids.includes(id))).toBe(true)
   })
 
   it("finds the right passage at rank 1 for most questions", () => {
-    const top1 = answerable.filter(([q, id]) => retrieve(q, 1)[0]?.chunk.id === id).length
+    const top1 = answerable.filter(([q, id]) => [id].flat().includes(retrieve(q, 1)[0]?.chunk.id ?? "")).length
     expect(top1 / answerable.length).toBeGreaterThanOrEqual(0.6)
   })
 
@@ -63,6 +61,12 @@ describe("corpus", () => {
       expect(c.text.trim().length).toBeGreaterThan(20)
       expect(c.href).toMatch(/^(\/|https?:\/\/)/)
     }
+  })
+
+  it("only describes projects that are on the site: EduCampus was deliberately left out", () => {
+    const text = corpus.map((c) => `${c.title} ${c.text}`).join("\n")
+    expect(text).not.toMatch(/educampus|campuspilot/i)
+    expect(retrieve("What is EduCampus?")).toEqual([])
   })
 
   it("says plainly when a post isn't published, instead of linking nowhere", () => {
