@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation"
 import { memo, useCallback, useEffect, useId, useMemo, useState, type KeyboardEvent } from "react"
-import { useTheme } from "next-themes"
 import { Dialog } from "radix-ui"
 import {
   Copy,
@@ -12,12 +11,10 @@ import {
   FolderKanban,
   Layers,
   Mail,
-  Moon,
   PenLine,
   Rss,
   Search,
   Sparkles,
-  Sun,
   User,
   type LucideIcon,
 } from "lucide-react"
@@ -103,14 +100,12 @@ export const CommandPalette = memo(function CommandPalette({
 
 function PaletteBody({ onFinish }: { onFinish: () => void }) {
   const router = useRouter()
-  const { resolvedTheme, setTheme } = useTheme()
   const { askEnabled, openAsk, notify } = useAssist()
   const [query, setQuery] = useState("")
   const [active, setActive] = useState(0)
   const listId = useId()
 
-  const theme = resolvedTheme === "light" || resolvedTheme === "dark" ? resolvedTheme : undefined
-  const commands = useMemo(() => buildCommands({ askEnabled, theme }), [askEnabled, theme])
+  const commands = useMemo(() => buildCommands({ askEnabled }), [askEnabled])
   const results = useMemo(() => searchCommands(commands, query, askEnabled), [commands, query, askEnabled])
   const filtering = query.trim().length > 0
   const current = Math.min(active, Math.max(results.length - 1, 0))
@@ -137,15 +132,12 @@ function PaletteBody({ onFinish }: { onFinish: () => void }) {
         case "copy-email":
           notify((await copyText(site.email)) ? "Email address copied" : `Email: ${site.email}`)
           break
-        case "toggle-theme":
-          setTheme(resolvedTheme === "light" ? "dark" : "light")
-          break
         case "ask":
           openAsk(action.question)
           break
       }
     },
-    [router, notify, setTheme, resolvedTheme, openAsk],
+    [router, notify, openAsk],
   )
 
   const run = (command: Command) => {
@@ -226,7 +218,7 @@ function PaletteBody({ onFinish }: { onFinish: () => void }) {
             {items.map((command) => {
               const i = position.get(command.id) ?? 0
               const isActive = i === current
-              const Icon = command.icon === "theme" ? (resolvedTheme === "light" ? Moon : Sun) : (icons[command.icon] ?? Search)
+              const Icon = icons[command.icon] ?? Search
               return (
                 <div
                   key={command.id}

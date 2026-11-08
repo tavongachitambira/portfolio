@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import { LIMITS } from "@/lib/ask/messages"
 import { buildCommands, filterCommands, groupCommands, searchCommands } from "@/lib/palette"
 
-const commands = buildCommands({ askEnabled: true, theme: "dark" })
+const commands = buildCommands({ askEnabled: true })
 const labels = (list: { label: string }[]) => list.map((c) => c.label)
 
 describe("buildCommands", () => {
@@ -23,10 +23,10 @@ describe("buildCommands", () => {
     expect(buildCommands({ askEnabled: false }).some((c) => c.action.type === "ask")).toBe(false)
   })
 
-  it("names the theme it would switch to", () => {
-    expect(labels(buildCommands({ askEnabled: false, theme: "dark" }))).toContain("Switch to light theme")
-    expect(labels(buildCommands({ askEnabled: false, theme: "light" }))).toContain("Switch to dark theme")
-    expect(labels(buildCommands({ askEnabled: false }))).toContain("Toggle light or dark theme")
+  it("has no theme switch", () => {
+    expect(labels(commands).join(" ")).not.toMatch(/theme/i)
+    expect(filterCommands(commands, "light")).toEqual([])
+    expect(filterCommands(commands, "dark mode")).toEqual([])
   })
 
   it("links to profiles but never turns the mailto link into one", () => {

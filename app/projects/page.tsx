@@ -1,8 +1,7 @@
 import type { Metadata } from "next"
 
-import Link from "next/link"
-
 import { PageShell } from "@/components/layout/PageShell"
+import { CaseStudyLink } from "@/components/projects/CaseStudyLink"
 import { ProjectTicket } from "@/components/projects/ProjectTicket"
 import { caseStudies } from "@/lib/data/case-studies"
 import { projectSlug, sortedProjects } from "@/lib/data/projects"
@@ -20,13 +19,7 @@ export default function ProjectsPage() {
         {sortedProjects.map((project, i) => (
           <div key={project.name}>
             <ProjectTicket project={project} index={i} />
-            {caseStudies[projectSlug(project)] && (
-              <p className="mt-3 text-center text-sm">
-                <Link href={`/projects/${projectSlug(project)}`} className="font-semibold text-primary hover:underline">
-                  Read the {project.name} case study →
-                </Link>
-              </p>
-            )}
+            {caseStudies[projectSlug(project)] && <CaseStudyLink slug={projectSlug(project)} name={project.name} />}
           </div>
         ))}
         <ComingSoon  message="More projects are in the works." />

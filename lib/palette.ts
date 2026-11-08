@@ -16,7 +16,6 @@ export type CommandAction =
   | { type: "route"; href: string }
   | { type: "external"; href: string }
   | { type: "copy-email" }
-  | { type: "toggle-theme" }
   | { type: "ask"; question?: string }
 
 export interface Command {
@@ -34,8 +33,6 @@ export interface Command {
 
 export interface PaletteOptions {
   askEnabled: boolean
-  /** current theme; labels the theme command */
-  theme?: "light" | "dark"
 }
 
 const sectionLabels: Record<string, string> = {
@@ -45,7 +42,7 @@ const sectionLabels: Record<string, string> = {
   skills: "Skills",
 }
 
-export function buildCommands({ askEnabled, theme }: PaletteOptions): Command[] {
+export function buildCommands({ askEnabled }: PaletteOptions): Command[] {
   const list: Command[] = []
 
   for (const link of navLinks) {
@@ -118,7 +115,7 @@ export function buildCommands({ askEnabled, theme }: PaletteOptions): Command[] 
       label: "Ask my portfolio",
       group: "Actions",
       hint: "AI",
-      keywords: "question chat assistant claude answer",
+      keywords: "question chat assistant ai answer",
       icon: "ask",
       action: { type: "ask" },
     })
@@ -141,15 +138,6 @@ export function buildCommands({ askEnabled, theme }: PaletteOptions): Command[] 
       keywords: "cv resume download",
       icon: "resume",
       action: { type: "external", href: site.resume },
-    },
-    {
-      id: "theme",
-      label: theme === "light" ? "Switch to dark theme" : theme === "dark" ? "Switch to light theme" : "Toggle light or dark theme",
-      group: "Actions",
-      hint: "Theme",
-      keywords: "dark light mode appearance colors",
-      icon: "theme",
-      action: { type: "toggle-theme" },
     },
   )
 
