@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
-import { ArrowUpRight } from "lucide-react"
+import { ArrowLeft, ArrowUpRight } from "lucide-react"
 
 import { PageShell } from "@/components/layout/PageShell"
 import { ArchitectureDiagram } from "@/components/projects/ArchitectureDiagram"
@@ -158,9 +158,15 @@ async function CaseStudy({ params }: { params: Params }) {
           </div>
         )}
 
-        <p className="text-sm text-muted-foreground">
-          <Link href="/projects" className="text-primary hover:underline">← All projects</Link>
-        </p>
+        <div>
+          <Link
+            href="/projects"
+            className="group inline-flex items-center gap-2.5 text-sm font-semibold text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+          >
+            <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-1 motion-reduce:transition-none" aria-hidden />
+            All projects
+          </Link>
+        </div>
       </div>
     </PageShell>
   )

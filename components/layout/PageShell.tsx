@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 
+import { AssistTriggers } from "@/components/assist/AssistTriggers"
 import { Footer } from "@/components/layout/Footer"
 
 /* Shared frame for the "view more" pages. */
@@ -17,6 +18,11 @@ export function PageShell({
 }) {
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-10 lg:py-16">
+      {/* a zero-height sticky anchor: the bar sits level with "Back home" and stays on screen while scrolling */}
+      <div className="sticky top-7 z-40 h-0">
+        <AssistTriggers className="absolute -top-3.5 right-0" />
+      </div>
+
       <Link
         href="/"
         className="group inline-flex items-center gap-2 font-mono text-xs text-muted-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"

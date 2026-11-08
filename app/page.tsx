@@ -2,6 +2,7 @@
 
 import { useRef } from "react"
 
+import { AssistTriggers } from "@/components/assist/AssistTriggers"
 import { HeroStage } from "@/components/hero/hero-stage"
 import { Profile } from "@/components/home/Profile"
 import { ProjectTabs } from "@/components/home/ProjectTabs"
@@ -53,6 +54,14 @@ export default function Home() {
             ref={rightRef}
             className="scrollbar-clay w-full overflow-x-hidden overflow-y-auto pb-10 lg:h-screen lg:pr-6 lg:pb-8 lg:pl-6 xl:pr-12 xl:pb-12 xl:pl-10"
           >
+            {/* Search and Ask. On a phone it floats at the top right. On a desktop it sticks to the top of this panel:
+                at the content's left edge on wide screens, and at its right edge on laptops (1024-1279px), where the
+                first hero card reaches the top and its title would sit under the bar. It lives inside the scroller so
+                the mouse wheel works over it. */}
+            <div className="lg:sticky lg:top-6 lg:z-40 lg:h-0">
+              <AssistTriggers className="fixed top-16 right-4 z-60 lg:absolute lg:top-0 lg:right-6 xl:right-auto xl:left-6" />
+            </div>
+
             <HeroStage scrollContainerRef={rightRef} isMobile={isMobile} />
 
             <div className="space-y-16 px-5 lg:px-6 xl:space-y-24 xl:px-6">
