@@ -11,8 +11,8 @@ export function PageShell({
   children,
 }: {
   eyebrow: string
-  title: string
-  intro: string
+  title: React.ReactNode
+  intro: React.ReactNode
   children: React.ReactNode
 }) {
   return (

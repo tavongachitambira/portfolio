@@ -19,9 +19,6 @@ export interface Chunk {
   href: string
 }
 
-/** Names a visitor might use that the site's own copy doesn't. */
-const aliases: Record<string, string[]> = { educampus: ["CampusPilot"] }
-
 export function buildCorpus(): Chunk[] {
   const chunks: Chunk[] = []
   const add = (id: string, title: string, text: string, href: string) => chunks.push({ id, title, text, href })
@@ -47,12 +44,11 @@ export function buildCorpus(): Chunk[] {
     const slug = projectSlug(p)
     const study = caseStudies[slug]
     const href = study ? `/projects/${slug}` : "/projects"
-    const also = aliases[slug]?.length ? ` Also known as ${aliases[slug].join(", ")}.` : ""
     const facts = [p.role && `Role: ${p.role}.`, p.status && `Status: ${p.status.toLowerCase()}.`, projectPeriod(p) && `Period: ${projectPeriod(p)}.`]
       .filter(Boolean)
       .join(" ")
 
-    add(`project-${slug}`, `${p.name} overview`, `${p.description}${also} ${facts} Tech: ${p.tags.join(", ")}. ${(p.highlights ?? []).join(" ")}`.trim(), href)
+    add(`project-${slug}`, `${p.name} overview`, `${p.description} ${facts} Tech: ${p.tags.join(", ")}. ${(p.highlights ?? []).join(" ")}`.trim(), href)
 
     if (study) {
       add(`project-${slug}-problem`, `${p.name}: the problem`, `${study.tagline} ${study.problem.join(" ")}`, href)

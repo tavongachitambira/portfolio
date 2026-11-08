@@ -12,10 +12,11 @@ const routes = [
   ...projects.filter((p) => caseStudies[projectSlug(p)]).map((p) => `/projects/${projectSlug(p)}`),
 ]
 
+// No lastModified on purpose: "now" on every fetch is not a real modification date (crawlers learn to
+// ignore it), and leaving it out lets Next prerender this file at build time.
 export default function sitemap(): MetadataRoute.Sitemap {
   return routes.map((path) => ({
     url: `${site.url}${path}`,
-    lastModified: new Date(),
     changeFrequency: "monthly",
     priority: path === "" ? 1 : 0.7,
   }))

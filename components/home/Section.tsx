@@ -19,7 +19,7 @@ export function Section({
   children: ReactNode
 }) {
   return (
-    <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-6">
+    <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-[68px] lg:scroll-mt-5">
       <motion.div
         variants={fadeUp}
         initial="hidden"

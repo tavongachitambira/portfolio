@@ -4,6 +4,8 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { Ambient } from "@/components/layout/ambient";
+import { AssistProvider } from "@/components/assist/AssistProvider";
+import { AssistTriggers } from "@/components/assist/AssistTriggers";
 import { isPublished, posts } from "@/lib/data/writing";
 import { site } from "@/lib/site";
 
@@ -51,11 +53,11 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <Ambient />
-          <div className="fixed top-16 right-4 z-60 lg:top-6 lg:right-6">
-           
-          </div>
-          {children}
+          <AssistProvider>
+            <Ambient />
+            <AssistTriggers />
+            {children}
+          </AssistProvider>
         </ThemeProvider>
       </body>
     </html>

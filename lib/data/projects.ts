@@ -37,18 +37,6 @@ export const projects: Project[] = [
     startDate: "July 2026",
     // github: "https://github.com/cypherx72/syncboard",
   },
-  {
-    name: "EduCampus",
-    description:
-      "Full-stack campus platform with separate teacher and student experiences: assignments, timetable, grades, announcements, attendance, quizzes, course materials and a library, on a Next.js App Router front end and an Express + Apollo GraphQL back end over PostgreSQL.",
-    highlights: [
-      "Audited the whole codebase and fixed 57 issues.",
-      "Moved eight domains from mock data to real, database-backed data.",
-      "JWT cookie auth that works across the Next.js / Express boundary.",
-    ],
-    tags: ["Next.js", "GraphQL", "Apollo", "Express", "Prisma", "PostgreSQL", "shadcn/ui"],
-    role: "Primary Developer",
-  },
 ]
 
 export const projectSlug = (p: Project) => p.slug ?? p.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")

@@ -45,11 +45,15 @@ const OVERVIEW_BOOST = 1.8
 const K1 = 1.2
 const B = 0.75
 const TITLE_BOOST = 3
+/** A word in a passage's title is that passage's subject. However common it is across the site
+    (every SyncBoard passage says "SyncBoard"), a title match never counts for less than this. */
+const TITLE_IDF_FLOOR = 1
 /** A hit must beat this to count; tuned against tests/ask-retrieval.test.ts. */
 export const MIN_SCORE = 1.2
 
 interface Index {
   chunks: Chunk[]
+  titleTerms: Set<string>[]
   tf: Map<string, number>[]
   len: number[]
   avg: number
@@ -70,7 +74,8 @@ function index(): Index {
   const len = tf.map((m) => [...m.values()].reduce((a, b) => a + b, 0))
   const df = new Map<string, number>()
   for (const m of tf) for (const t of m.keys()) df.set(t, (df.get(t) ?? 0) + 1)
-  cached = { chunks, tf, len, avg: len.reduce((a, b) => a + b, 0) / len.length, df }
+  const titleTerms = chunks.map((c) => new Set(tokenize(c.title)))
+  cached = { chunks, titleTerms, tf, len, avg: len.reduce((a, b) => a + b, 0) / len.length, df }
   return cached
 }
 
@@ -91,7 +96,8 @@ export function retrieve(query: string, k = 5): Hit[] {
     for (const t of terms) {
       const f = ix.tf[i].get(t)
       if (!f) continue
-      const idf = Math.log(1 + (n - (ix.df.get(t) ?? 0) + 0.5) / ((ix.df.get(t) ?? 0) + 0.5))
+      const natural = Math.log(1 + (n - (ix.df.get(t) ?? 0) + 0.5) / ((ix.df.get(t) ?? 0) + 0.5))
+      const idf = ix.titleTerms[i].has(t) ? Math.max(natural, TITLE_IDF_FLOOR) : natural
       score += (idf * f * (K1 + 1)) / (f + K1 * (1 - B + (B * ix.len[i]) / ix.avg))
     }
     if (definition && OVERVIEW_ID.test(chunk.id)) score *= OVERVIEW_BOOST

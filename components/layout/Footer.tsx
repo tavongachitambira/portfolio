@@ -99,7 +99,7 @@ export function Footer() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.15 }}
       transition={{ duration: 0.5, ease: motionEase }}
-      className="pt-4"
+      className="scroll-mt-[68px] pt-4 lg:scroll-mt-5"
     >
       <section aria-labelledby="connect-title" className="clay clay-md p-6 sm:p-8">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-12">
