@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "mock:anthropic": "node scripts/mock-anthropic.mjs",
+    "mock:ask": "node scripts/mock-ask.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"

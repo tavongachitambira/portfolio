@@ -1,5 +1,6 @@
 import { LIMITS, parseMessages, searchQuery } from "@/lib/ask/messages"
 import { buildSystemPrompt, NOT_ON_SITE } from "@/lib/ask/prompt"
+import { resolveProvider } from "@/lib/ask/provider"
 import { retrieve } from "@/lib/ask/retrieve"
 import { line, toNdjson, type SourceRef } from "@/lib/ask/stream"
 import { clientIp, rateLimit } from "@/lib/rate-limit"
@@ -37,8 +38,8 @@ function fixedAnswer(text: string) {
 /* Order: switch -> rate limits -> body -> retrieval -> model.
    Questions the site can't answer never reach the model, so they cost nothing. */
 export async function POST(request: Request) {
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey || process.env.ASK_DISABLED === "true") return json({ error: "Ask is not available right now." }, 503)
+  const provider = process.env.ASK_DISABLED === "true" ? null : resolveProvider()
+  if (!provider) return json({ error: "Ask is not available right now." }, 503)
 
   const ip = clientIp(request.headers)
   const mine = await rateLimit({ scope: "ask", id: ip, ...PER_IP })
@@ -71,40 +72,29 @@ export async function POST(request: Request) {
   if (!hits.length) return ndjson(fixedAnswer(NOT_ON_SITE))
 
   const sources: SourceRef[] = hits.map((h, i) => ({ n: i + 1, title: h.chunk.title, href: h.chunk.href }))
-  const effort = process.env.ASK_EFFORT ?? "low"
-  const base = (process.env.ANTHROPIC_BASE_URL || "https://api.anthropic.com").replace(/\/+$/, "")
 
   let upstream: Response
   try {
-    upstream = await fetch(`${base}/v1/messages`, {
+    upstream = await fetch(provider.url, {
       method: "POST",
-      headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-      body: JSON.stringify({
-        model: process.env.ASK_MODEL || "claude-haiku-5-5",
-        // thinking tokens count against this, so leave room for the answer itself
-        max_tokens: Number(process.env.ASK_MAX_TOKENS) || 2048,
-        stream: true,
-        system: buildSystemPrompt(hits),
-        messages,
-        ...(effort && effort !== "none" ? { output_config: { effort } } : {}),
-      }),
+      headers: provider.headers,
+      body: provider.body({ system: buildSystemPrompt(hits), messages }),
       cache: "no-store",
       signal: AbortSignal.any([request.signal, AbortSignal.timeout(UPSTREAM_TIMEOUT_MS)]),
     })
   } catch (error) {
-    console.error("ask: upstream request failed.", error instanceof Error ? error.name : error)
+    console.error("ask: upstream request failed.", provider.id, error instanceof Error ? error.name : error)
     return json({ error: "Ask is unavailable right now." }, 502)
   }
 
   if (!upstream.ok || !upstream.body) {
-    // status and error type only: never the prompt, the key or the visitor's words
-    const type = await upstream
-      .json()
-      .then((b: { error?: { type?: string } }) => b?.error?.type)
-      .catch(() => undefined)
-    console.error("ask: upstream error.", upstream.status, type)
-    return json({ error: "Ask is unavailable right now." }, upstream.status === 429 || upstream.status === 529 ? 503 : 502)
+    // provider, status and a short error code only: never the prompt, the key or the visitor's words
+    const label = await upstream.json().then(provider.errorLabel).catch(() => undefined)
+    console.error("ask: upstream error.", provider.id, upstream.status, label)
+    // out of quota or overloaded: worth trying again shortly. Anything else (a bad key or model) is on us
+    const busy = upstream.status === 429 || upstream.status === 503 || upstream.status === 529
+    return json({ error: busy ? "Ask is busy right now. Please try again in a minute." : "Ask is unavailable right now." }, busy ? 503 : 502)
   }
 
-  return ndjson(toNdjson(upstream.body, sources))
+  return ndjson(toNdjson(provider.events(upstream.body), sources))
 }

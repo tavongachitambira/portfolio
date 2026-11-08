@@ -1,5 +1,7 @@
-/* Anthropic's streaming reply is Server-Sent Events. The browser gets something simpler:
-   one JSON object per line (NDJSON), so the client needs no SSE parser.
+/* A model's streaming reply is Server-Sent Events, in a dialect that depends on the provider
+   (Anthropic's own, or the OpenAI style that Gemini and Grok speak). Each provider module turns its
+   dialect into the small ModelEvent vocabulary below. This file turns that into what the browser
+   gets: one JSON object per line (NDJSON), so the client needs no SSE parser.
 
      {"type":"sources","sources":[{"n":1,"title":"…","href":"…"}]}   first, once
      {"type":"text","text":"…"}                                       zero or more
@@ -22,8 +24,15 @@ export type AskEvent =
 const encoder = new TextEncoder()
 export const line = (event: AskEvent) => encoder.encode(`${JSON.stringify(event)}\n`)
 
-/** Yields each parsed `data:` payload of an SSE stream, however the bytes happen to be chunked. */
-export async function* sseEvents(body: ReadableStream<Uint8Array>): AsyncGenerator<Record<string, unknown>> {
+/** What any provider's stream boils down to. Thinking and reasoning output is not part of it. */
+export type ModelEvent =
+  | { type: "text"; text: string }
+  | { type: "refusal" }
+  | { type: "end" }
+  | { type: "error" }
+
+/** Yields the `data:` payload of each SSE frame, however the bytes happen to be chunked. */
+export async function* sseData(body: ReadableStream<Uint8Array>): AsyncGenerator<string> {
   const reader = body.getReader()
   const decoder = new TextDecoder()
   let buffer = ""
@@ -42,12 +51,7 @@ export async function* sseEvents(body: ReadableStream<Uint8Array>): AsyncGenerat
           .filter((l) => l.startsWith("data:"))
           .map((l) => l.slice(5).replace(/^ /, ""))
           .join("\n")
-        if (!data) continue
-        try {
-          yield JSON.parse(data)
-        } catch {
-          // a malformed frame is skipped rather than ending the answer
-        }
+        if (data) yield data
       }
       if (done) return
     }
@@ -56,43 +60,64 @@ export async function* sseEvents(body: ReadableStream<Uint8Array>): AsyncGenerat
   }
 }
 
+/** The same, parsed as JSON. A malformed frame is skipped rather than ending the answer. */
+export async function* sseEvents(body: ReadableStream<Uint8Array>): AsyncGenerator<Record<string, unknown>> {
+  for await (const data of sseData(body)) {
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(data)
+    } catch {
+      continue
+    }
+    if (parsed && typeof parsed === "object") yield parsed as Record<string, unknown>
+  }
+}
+
 export const REFUSED = "I can't help with that one."
 export const INTERRUPTED = "The answer was cut off. Please try again."
 
-/** Upstream SSE in, NDJSON out. Only visible text is forwarded: thinking blocks never reach the page. */
-export function toNdjson(upstream: ReadableStream<Uint8Array>, sources: SourceRef[]): ReadableStream<Uint8Array> {
+/** Model events in, NDJSON out. Only visible text is forwarded. */
+export function toNdjson(events: AsyncIterable<ModelEvent>, sources: SourceRef[]): ReadableStream<Uint8Array> {
+  let cancelled = false
+
   return new ReadableStream<Uint8Array>({
     async start(controller) {
-      controller.enqueue(line({ type: "sources", sources }))
+      const send = (event: AskEvent) => {
+        if (!cancelled) controller.enqueue(line(event))
+      }
+      const close = () => {
+        if (!cancelled) controller.close()
+      }
+
+      send({ type: "sources", sources })
       let sentText = false
       try {
-        for await (const event of sseEvents(upstream)) {
-          if (event.type === "content_block_delta") {
-            const delta = event.delta as { type?: string; text?: string } | undefined
-            if (delta?.type === "text_delta" && delta.text) {
-              sentText = true
-              controller.enqueue(line({ type: "text", text: delta.text }))
-            }
-          } else if (event.type === "message_delta") {
-            const stop = (event.delta as { stop_reason?: string } | undefined)?.stop_reason
-            if (stop === "refusal" && !sentText) controller.enqueue(line({ type: "text", text: REFUSED }))
+        for await (const event of events) {
+          if (cancelled) return
+          if (event.type === "text") {
+            sentText = true
+            send({ type: "text", text: event.text })
+          } else if (event.type === "refusal") {
+            if (!sentText) send({ type: "text", text: REFUSED })
+            sentText = true
           } else if (event.type === "error") {
-            controller.enqueue(line({ type: "error", message: INTERRUPTED }))
-            return controller.close()
-          } else if (event.type === "message_stop") {
-            controller.enqueue(line({ type: "done" }))
-            return controller.close()
+            send({ type: "error", message: INTERRUPTED })
+            return close()
+          } else {
+            send({ type: "done" })
+            return close()
           }
         }
-        // the connection ended without message_stop
-        controller.enqueue(line({ type: "error", message: INTERRUPTED }))
+        // the connection ended without a closing event
+        send({ type: "error", message: INTERRUPTED })
       } catch {
-        controller.enqueue(line({ type: "error", message: INTERRUPTED }))
+        send({ type: "error", message: INTERRUPTED })
       }
-      controller.close()
+      close()
     },
     cancel() {
-      // the visitor closed the panel: the generator's finally-block cancels the upstream reader
+      // the visitor closed the panel: the loop above stops, and its generators cancel the upstream reader
+      cancelled = true
     },
   })
 }
