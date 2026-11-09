@@ -8,6 +8,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @custom-variant tall (@media (min-height: 850px));
+@custom-variant short (@media (max-height: 700px));
 
 @theme inline {
   --font-sans: var(--font-jakarta);

@@ -63,6 +63,26 @@
   to { opacity: 1; }
 }
 
+/* first-visit preloader: the tilted rings turn in place (components/layout/RingGauge).
+   --ring-dur is one full turn; --ring-len is the length of the path the dashes run around. */
+@keyframes ring-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes ring-run {
+  to { stroke-dashoffset: calc(var(--ring-len) * -1px); }
+}
+.ring-spin {
+  transform-box: view-box;
+  transform-origin: 0 0;
+  animation: ring-spin var(--ring-dur, 30s) linear infinite;
+}
+.ring-run {
+  animation: ring-run var(--ring-dur, 30s) linear infinite;
+}
+.ring-reverse {
+  animation-direction: reverse;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;

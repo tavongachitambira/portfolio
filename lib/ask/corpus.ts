@@ -36,7 +36,7 @@ export function buildCorpus(): Chunk[] {
   add(
     "site",
     "About this website",
-    "This portfolio is built with Next.js 16, React 19, Tailwind CSS 4 and Framer Motion, written in TypeScript and deployed on Vercel. It has a loading animation made of binary digits, a command palette (Ctrl or Cmd + K) and this Ask box.",
+    "This portfolio is built with Next.js 16, React 19, Tailwind CSS 4 and Framer Motion, written in TypeScript and deployed on Vercel. It has a loading animation of falling letters and turning rings, a command palette (Ctrl or Cmd + K) and this Ask box.",
     "/",
   )
 
