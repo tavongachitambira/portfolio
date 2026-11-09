@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { AssistTriggers } from "@/components/assist/AssistTriggers";
 import { navLinks } from "@/lib/data/nav";
 
 export function MobileNav({
@@ -50,6 +51,9 @@ export function MobileNav({
               {label}
             </motion.span>
           </AnimatePresence>
+
+          {/* search and Ask stay one tap away while the page scrolls */}
+          <AssistTriggers variant="icons" className="-mr-2 ml-auto" />
         </motion.div>
       )}
     </AnimatePresence>

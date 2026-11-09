@@ -18,18 +18,18 @@ export function PageShell({
 }) {
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-10 lg:py-16">
-      {/* a zero-height sticky anchor: the bar sits level with "Back home" and stays on screen while scrolling */}
-      <div className="sticky top-7 z-40 h-0">
-        <AssistTriggers className="absolute -top-3.5 right-0" />
+      {/* one row: "Back home" on the left, the search bar on the right. It scrolls with the page, so it never
+          floats over the content below; the row is the `@container` the bar measures */}
+      <div className="@container flex items-center justify-between gap-4">
+        <Link
+          href="/"
+          className="group inline-flex items-center gap-2 font-mono text-xs text-muted-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+        >
+          <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-1" aria-hidden />
+          Back home
+        </Link>
+        <AssistTriggers />
       </div>
-
-      <Link
-        href="/"
-        className="group inline-flex items-center gap-2 font-mono text-xs text-muted-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-      >
-        <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-1" aria-hidden />
-        Back home
-      </Link>
 
       <header className="mt-10 mb-12">
         <p className="font-mono text-sm text-primary">{eyebrow}</p>
