@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { Ambient } from "@/components/layout/ambient";
 import { AssistProvider } from "@/components/assist/AssistProvider";
+import { AssistTriggers } from "@/components/assist/AssistTriggers";
 import { isPublished, posts } from "@/lib/data/writing";
 import { site } from "@/lib/site";
 
@@ -55,6 +56,7 @@ export default function RootLayout({
           <AssistProvider>
             <Ambient />
             {children}
+            <AssistTriggers variant="dock" />
           </AssistProvider>
         </ThemeProvider>
       </body>

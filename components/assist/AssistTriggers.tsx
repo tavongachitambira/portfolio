@@ -30,7 +30,7 @@ const bare = cn(
    labels only when the row it sits in is wide enough for them (a container query, so the
    parent row must be an `@container`); narrower, it shrinks to two icons. "icons" is the same
    pair without the glass, for use inside a bar that already exists. */
-export function AssistTriggers({ className, variant = "bar" }: { className?: string; variant?: "bar" | "icons" }) {
+export function AssistTriggers({ className, variant = "bar" }: { className?: string; variant?: "bar" | "icons" | "dock" }) {
   const { askEnabled, openPalette, openAsk } = useAssist()
   // the server can't know the platform, so it renders "Ctrl" and a Mac corrects it after hydration
   const apple = useSyncExternalStore(never, isApple, () => false)
@@ -50,6 +50,31 @@ export function AssistTriggers({ className, variant = "bar" }: { className?: str
     "aria-haspopup": "dialog" as const,
     "aria-label": "Ask my portfolio",
     title: "Ask my portfolio",
+  }
+
+  if (variant === "dock") {
+    // a small corner dock: icons only, fixed to the bottom-right on every screen size. Quiet glass so it
+    // sits with the page, with the sparkle in the accent colour so it still reads as "something to try".
+    return (
+      <div
+        role="group"
+        aria-label="Search and ask"
+        className={cn(
+          "fixed right-[max(1rem,env(safe-area-inset-right))] bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 flex items-center gap-0.5 rounded-full border border-foreground/10 bg-background/70 p-1",
+          "backdrop-blur-md shadow-[0_6px_20px_-10px_rgb(0_0_0/0.55)]",
+          className,
+        )}
+      >
+        <button {...search} className={cn(bare, "size-9 text-foreground/65")}>
+          <Search className="size-[18px]" aria-hidden />
+        </button>
+        {askEnabled && (
+          <button {...ask} className={cn(bare, "size-9")}>
+            <Sparkles className="size-[18px] text-primary" aria-hidden />
+          </button>
+        )}
+      </div>
+    )
   }
 
   if (variant === "icons") {
