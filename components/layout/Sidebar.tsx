@@ -5,7 +5,6 @@ import { useState } from "react"
 import { motion } from "framer-motion"
 import { Check, Copy, Download } from "lucide-react"
 
-import { AssistTriggers } from "@/components/assist/AssistTriggers"
 import { Button } from "@/components/ui/button"
 import { RotatingText } from "@/components/ui/rotating-text"
 import { TypedText } from "@/components/ui/typed-text"
@@ -62,13 +61,7 @@ export function Sidebar({ asideRef, activeSection, onNavigate }: SidebarProps) {
     >
       {/* Block 1: intro */}
       <header className="flex flex-col gap-6 lg:gap-4 lg:short:gap-3 xl:gap-5 xl:short:gap-3 tall:gap-8">
-        {/* The way in to search and Ask lives here, in the static sidebar, so it never covers anything that
-            scrolls. The row is the `@container` the bar measures: it shows labels when there is room for them
-            and shrinks to two icons when there isn't (phones, and laptops from 1024 to 1279px). */}
-        <div className="@container flex items-center justify-between gap-3">
-          <TypedText text="Hi, my name is" className="font-mono text-sm text-primary" />
-          <AssistTriggers />
-        </div>
+        <TypedText text="Hi, my name is" className="font-mono text-sm text-primary" />
 
         <motion.div {...reveal(1)}>
           <h1 className="text-4xl leading-[1.05] font-extrabold tracking-tight sm:text-5xl lg:max-xl:text-[2.65rem]">
