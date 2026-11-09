@@ -5,15 +5,16 @@ import type { MotionValue } from "framer-motion"
 
 import { cn } from "@/lib/utils"
 
-/* A live field of encoding digits for the loader.
+/* A live field of letters for the loader.
 
-   Columns of 0s and 1s stream down the screen, each with a bright head and a fading tail,
-   over a faint static grid of the same digits. The bits are not random: every column reads
-   the ASCII encoding of `text` from its own offset, so the field is literally the name in
-   binary. A few digits flip every frame so it is never quite the same twice.
+   Columns of letters stream down the screen, each with a bright head and a fading tail, over a
+   faint static grid of the same letters. They are not random: every column reads `text` (the
+   owner's name and roles, letters only) from its own offset, round and round, so the field is
+   made of the very words it sits behind. A few letters change every frame so it is never quite
+   the same twice.
 
-   Two stacked canvases: the static grid is painted once (and patched cell by cell as digits
-   flip), the streams are redrawn every frame on top. ~30fps, DPR capped at 2, paused while
+   Two stacked canvases: the static grid is painted once (and patched cell by cell as letters
+   change), the streams are redrawn every frame on top. ~30fps, DPR capped at 2, paused while
    the tab is hidden, one still frame under reduced motion. Colours come from the theme
    tokens (--foreground / --primary), so light and dark both work. `progress` (0..100)
    wakes more columns as the load advances. */
@@ -23,7 +24,7 @@ type Column = {
   speed: number // rows per second
   len: number // tail length in rows
   rank: number // 0..1: the column wakes up once load progress passes this
-  bits: Uint8Array // one bit per row
+  glyphs: Uint8Array // one character code (A-Z) per row
 }
 
 const AMBIENT_ALPHA = 0.07
@@ -35,11 +36,13 @@ const FLIPS_PER_FRAME = 4
 
 const clamp01 = (v: number) => Math.min(Math.max(v, 0), 1)
 
-/** "Hi" -> "0100100001101001" */
-const encode = (text: string) =>
-  Array.from(text, (ch) => (ch.charCodeAt(0) & 0xff).toString(2).padStart(8, "0")).join("")
+/** "Tavonga Chitambira" -> "TAVONGACHITAMBIRA". Never empty, so the field always has something to draw. */
+const lettersOf = (text: string) => text.toUpperCase().replace(/[^A-Z]/g, "") || "A"
 
-export function DigitField({
+// one string per character code, so drawing a frame allocates nothing
+const GLYPH = Array.from({ length: 128 }, (_, code) => String.fromCharCode(code))
+
+export function GlyphField({
   text,
   progress,
   fontSize = 14,
@@ -62,7 +65,7 @@ export function DigitField({
     const ctx = live?.getContext("2d")
     if (!ambient || !live || !actx || !ctx) return
 
-    const stream = encode(text)
+    const source = lettersOf(text)
 
     let columns: Column[] = []
     let rows = 0
@@ -88,14 +91,15 @@ export function DigitField({
 
     const tailLength = () => 10 + Math.floor(Math.random() * 18)
     const streamSpeed = () => 5 + Math.random() * 10
+    const randomLetter = () => source.charCodeAt(Math.floor(Math.random() * source.length))
 
     const spawn = (): Column => {
       const len = tailLength()
-      const offset = Math.floor(Math.random() * stream.length)
-      const bits = new Uint8Array(rows)
-      for (let r = 0; r < rows; r++) bits[r] = stream.charCodeAt((offset + r) % stream.length) === 49 ? 1 : 0
+      const offset = Math.floor(Math.random() * source.length)
+      const glyphs = new Uint8Array(rows)
+      for (let r = 0; r < rows; r++) glyphs[r] = source.charCodeAt((offset + r) % source.length)
       // first paint: heads already scattered over the screen, so it never opens empty
-      return { head: -len + Math.random() * (rows + len), speed: streamSpeed(), len, rank: Math.random(), bits }
+      return { head: -len + Math.random() * (rows + len), speed: streamSpeed(), len, rank: Math.random(), glyphs }
     }
 
     const respawn = (c: Column) => {
@@ -106,7 +110,7 @@ export function DigitField({
 
     const paintAmbientCell = (i: number, r: number) => {
       actx.clearRect(i * cellW, r * cellH, cellW, cellH)
-      actx.fillText(columns[i].bits[r] ? "1" : "0", i * cellW, r * cellH)
+      actx.fillText(GLYPH[columns[i].glyphs[r]], i * cellW, r * cellH)
     }
 
     const layout = () => {
@@ -135,7 +139,7 @@ export function DigitField({
       actx.fillStyle = tailColor
       actx.globalAlpha = AMBIENT_ALPHA
       for (let i = 0; i < columns.length; i++) {
-        for (let r = 0; r < rows; r++) actx.fillText(columns[i].bits[r] ? "1" : "0", i * cellW, r * cellH)
+        for (let r = 0; r < rows; r++) actx.fillText(GLYPH[columns[i].glyphs[r]], i * cellW, r * cellH)
       }
     }
 
@@ -152,7 +156,7 @@ export function DigitField({
         const i = Math.floor(Math.random() * columns.length)
         const r = Math.floor(Math.random() * rows)
         if (!columns[i]) continue
-        columns[i].bits[r] ^= 1
+        columns[i].glyphs[r] = randomLetter()
         paintAmbientCell(i, r)
       }
     }
@@ -174,7 +178,7 @@ export function DigitField({
           const r = head - k
           if (r < 0 || r >= rows) continue
           ctx.globalAlpha = (1 - k / c.len) ** 2 * TAIL_ALPHA
-          ctx.fillText(c.bits[r] ? "1" : "0", i * cellW, r * cellH)
+          ctx.fillText(GLYPH[c.glyphs[r]], i * cellW, r * cellH)
         }
       }
 
@@ -184,7 +188,7 @@ export function DigitField({
         const c = columns[i]
         const head = Math.floor(c.head)
         if (c.rank > limit || head < 0 || head >= rows) continue
-        ctx.fillText(c.bits[head] ? "1" : "0", i * cellW, head * cellH)
+        ctx.fillText(GLYPH[c.glyphs[head]], i * cellW, head * cellH)
       }
       ctx.globalAlpha = 1
     }
