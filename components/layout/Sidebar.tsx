@@ -57,14 +57,14 @@ export function Sidebar({ asideRef, activeSection, onNavigate }: SidebarProps) {
   return (
     <aside
       ref={asideRef}
-      className="flex w-full flex-col justify-between gap-10 px-6 py-10 lg:sticky lg:top-0 lg:h-screen lg:w-1/3 lg:gap-4 lg:px-6 lg:py-6 lg:short:py-4 xl:w-2/5 xl:px-12 xl:py-10 xl:short:py-6 tall:py-14"
+      className="flex w-full flex-col justify-between gap-10 px-6 py-10 lg:sticky lg:top-0 lg:h-screen lg:w-1/3 lg:justify-center lg:gap-(--stack-gap) lg:px-6 lg:py-6 xl:w-2/5 xl:px-12"
     >
       {/* Block 1: intro */}
-      <header className="flex flex-col gap-6 lg:gap-4 lg:short:gap-3 xl:gap-5 xl:short:gap-3 tall:gap-8">
+      <header className="flex flex-col gap-6 lg:gap-(--intro-gap)">
         <TypedText text="Hi, my name is" className="font-mono text-sm text-primary" />
 
         <motion.div {...reveal(1)}>
-          <h1 className="text-4xl leading-[1.05] font-extrabold tracking-tight sm:text-5xl lg:max-xl:text-[2.65rem]">
+          <h1 className="text-4xl leading-[1.05] font-extrabold tracking-tight sm:text-5xl lg:text-hero">
             Tavonga
             <span className="block bg-linear-to-r from-primary to-glaze-rose bg-clip-text text-transparent">
               Chitambira
@@ -72,22 +72,22 @@ export function Sidebar({ asideRef, activeSection, onNavigate }: SidebarProps) {
           </h1>
           <RotatingText
             items={roles}
-            className="mt-3 text-lg font-medium text-foreground/80 xl:text-xl tall:mt-5"
+            className="mt-3 text-lg font-medium text-foreground/80 lg:text-role"
           />
         </motion.div>
 
         <motion.p
           {...reveal(2)}
-          className="max-w-sm text-base font-medium leading-relaxed text-muted-foreground"
+          className="max-w-sm text-base font-medium leading-relaxed text-muted-foreground lg:text-lead"
         >
           I build models and the web products around them.
         </motion.p>
 
-        <motion.div {...reveal(3)} className="flex flex-row flex-wrap gap-3 tall:gap-4">
-          <Button asChild>
+        <motion.div {...reveal(3)} className="flex flex-row flex-wrap gap-3">
+          <Button asChild className="lg:h-(--ctl)">
             <Link href="/projects">Explore my work</Link>
           </Button>
-          <Button asChild variant="secondary">
+          <Button asChild variant="secondary" className="lg:h-(--ctl)">
             <a href={site.resume} download>
               <Download aria-hidden="true" />
               Download résumé
@@ -98,7 +98,7 @@ export function Sidebar({ asideRef, activeSection, onNavigate }: SidebarProps) {
 
       {/* Block 2: nav */}
       <nav
-        className="hidden flex-col items-start lg:flex lg:gap-0 xl:gap-1 tall:gap-3"
+        className="hidden flex-col items-start lg:flex"
         aria-label="Sections"
       >
         {navLinks.map((link, i) => {
@@ -110,7 +110,7 @@ export function Sidebar({ asideRef, activeSection, onNavigate }: SidebarProps) {
                 onClick={(e) => onNavigate(e, `#${link.id}`)}
                 aria-current={isActive ? "location" : undefined}
                 className={cn(
-                  "group relative grid grid-cols-[1.75rem_auto] items-center gap-3 py-2 pl-5 text-left font-mono text-[11px] font-bold tracking-[0.12em] uppercase transition-colors duration-300 xl:py-2.5 tall:py-3.5",
+                  "group relative grid grid-cols-[1.75rem_auto] items-center gap-3 py-(--nav-pad) pl-5 text-left font-mono text-[11px] font-bold tracking-[0.12em] uppercase transition-colors duration-300",
                   isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                 )}
               >
@@ -150,7 +150,7 @@ export function Sidebar({ asideRef, activeSection, onNavigate }: SidebarProps) {
         variants={fadeIn}
         initial="hidden"
         animate="visible"
-        className="flex flex-wrap items-center gap-x-4 gap-y-3 lg:max-xl:gap-x-5 lg:max-xl:short:gap-x-3 tall:gap-y-6"
+        className="flex flex-wrap items-center gap-x-4 gap-y-3 lg:max-xl:gap-x-5 lg:max-xl:short:gap-x-3"
       >
         {socials
           .filter(({ label }) => label !== "Gmail")
@@ -170,7 +170,7 @@ export function Sidebar({ asideRef, activeSection, onNavigate }: SidebarProps) {
                 whileHover={{ y: -3 }}
                 whileFocus={{ y: -3 }}
                 transition={{ type: "spring", stiffness: 420, damping: 22 }}
-                className="clay clay-sm clay-press flex size-11 items-center justify-center rounded-full text-muted-foreground hover:text-primary lg:max-xl:short:size-10 tall:size-12"
+                className="clay clay-sm clay-press flex size-11 items-center justify-center rounded-full text-muted-foreground hover:text-primary lg:size-(--ctl)"
               >
                 <Icon className="size-5" />
               </motion.a>
@@ -191,7 +191,7 @@ export function Sidebar({ asideRef, activeSection, onNavigate }: SidebarProps) {
             whileHover={{ y: -3 }}
             whileFocus={{ y: -3 }}
             transition={{ type: "spring", stiffness: 420, damping: 22 }}
-            className="clay clay-sm clay-press flex h-11 items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-muted-foreground hover:text-primary lg:max-xl:short:h-10 tall:h-12"
+            className="clay clay-sm clay-press flex h-11 items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-muted-foreground hover:text-primary lg:h-(--ctl)"
           >
             {emailCopied ? (
               <Check className="size-4" aria-hidden="true" />

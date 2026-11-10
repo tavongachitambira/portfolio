@@ -25,6 +25,7 @@ const ORIGINAL_QUALITY = 60;
 
 const buildFragment = iterations => `#version 300 es
 precision highp float;
+precision highp int;
 uniform vec2 iResolution;
 uniform float iTime;
 uniform vec3 uCustomColor;
@@ -61,7 +62,10 @@ void mainImage(out vec4 o, vec2 C) {
   o.xyz = tanh(O/1e4);
 }
 
-bool finite1(float x){ return !(isnan(x) || isinf(x)); }
+// NaN / Inf guard on the raw bits (exponent all ones). isnan() and isinf() can be unreliable where the
+// shader compiler runs in fast-math mode, which is Metal's default (every iPhone), and a NaN that gets
+// through ends up in the canvas.
+bool finite1(float x){ return (floatBitsToUint(x) & 0x7f800000u) != 0x7f800000u; }
 vec3 sanitize(vec3 c){ return vec3(finite1(c.r) ? c.r : 0.0, finite1(c.g) ? c.g : 0.0, finite1(c.b) ? c.b : 0.0); }
 
 void main() {
@@ -82,14 +86,26 @@ void main() {
     float coverage = pow(smoothstep(0.035, 0.72, energy), 0.76) * min(uOpacity, 1.0) * 0.9;
     fragColor = vec4(mix(vec3(1.0), pigment, coverage), 1.0);
   } else {
-    fragColor = vec4(finalColor, alpha);
+    // Premultiplied: Safari composites a WebGL canvas as premultiplied whatever premultipliedAlpha the
+    // context asked for, so straight alpha here would come out too bright there. Chrome and Firefox
+    // look the same either way.
+    float a = clamp(alpha, 0.0, 1.0);
+    fragColor = vec4(finalColor * a, a);
   }
 }`;
+
+/* Hands the GPU context back immediately. iOS caps how many WebGL contexts a page may hold and only
+   frees one when its canvas is garbage collected, so tearing down without this slowly starves the page. */
+const release = gl => {
+  try { gl.getExtension('WEBGL_lose_context')?.loseContext(); } catch {}
+};
 
 export const Plasma = ({
   color = '#ffffff', speed = 1, direction = 'forward', scale = 1, opacity = 1,
   mouseInteractive = true, renderScale = 0.55, maxDpr = 1.5, targetFps = 60,
   iterations = 60, lightMode = false,
+  // called when this device can't draw the effect: no WebGL2, the shader won't link, or a lost context never came back
+  onUnsupported = () => {},
 }) => {
   const containerRef = useRef(null);
   const mousePos = useRef({ x: 0, y: 0 });
@@ -101,87 +117,131 @@ export const Plasma = ({
     const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     const customColorRgb = color ? hexToRgb(color) : [1, 1, 1];
     const directionMultiplier = direction === 'reverse' ? -1.0 : 1.0;
-    let renderer;
-    try { renderer = new Renderer({ webgl: 2, alpha: true, antialias: false, dpr: Math.min(window.devicePixelRatio || 1, maxDpr) }); } catch { return; }
-    const gl = renderer.gl;
-    if (!gl) return;
-    const canvas = gl.canvas;
-    canvas.style.display = 'block'; canvas.style.width = '100%'; canvas.style.height = '100%';
-    containerEl.appendChild(canvas);
-    const geometry = new Triangle(gl);
-    const program = new Program(gl, { vertex, fragment: buildFragment(iterations), uniforms: {
-      iTime: { value: 0 }, iResolution: { value: new Float32Array([1, 1]) },
-      uCustomColor: { value: new Float32Array(customColorRgb) }, uUseCustomColor: { value: color ? 1.0 : 0.0 },
-      uSpeed: { value: speed * 0.4 }, uDirection: { value: directionMultiplier }, uScale: { value: scale },
-      uOpacity: { value: opacity }, uMouse: { value: new Float32Array([0, 0]) },
-      uMouseInteractive: { value: mouseInteractive ? 1.0 : 0.0 }, uQuality: { value: iterations },
-      uStepScale: { value: ORIGINAL_QUALITY / iterations }, uLightMode: { value: lightMode ? 1 : 0 },
-    }});
-    const mesh = new Mesh(gl, { geometry, program });
-    const handleMouseMove = e => {
-      if (!mouseInteractive) return;
-      const rect = containerEl.getBoundingClientRect();
-      pendingMouse.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    };
-    if (mouseInteractive) containerEl.addEventListener('mousemove', handleMouseMove, { passive: true });
-    let resizePending = false;
-    const setSize = () => {
-      const rect = containerEl.getBoundingClientRect();
-      renderer.setSize(Math.max(1, Math.floor(rect.width * renderScale)), Math.max(1, Math.floor(rect.height * renderScale)));
-      canvas.style.width = '100%'; canvas.style.height = '100%';
-      const res = program.uniforms.iResolution.value;
-      res[0] = gl.drawingBufferWidth; res[1] = gl.drawingBufferHeight;
-    };
-    const ro = new ResizeObserver(() => {
-      if (resizePending) return;
-      resizePending = true;
-      requestAnimationFrame(() => { resizePending = false; setSize(); });
-    });
-    ro.observe(containerEl); setSize();
-    let raf = 0, contextLost = false, isVisible = true, tabVisible = document.visibilityState !== 'hidden';
-    const t0 = performance.now(), frameInterval = 1000 / targetFps;
-    let lastFrameTime = 0;
-    const renderStaticFrame = () => { program.uniforms.iTime.value = 0; renderer.render({ scene: mesh }); };
-    const loop = t => {
-      if (contextLost || !isVisible || !tabVisible) return;
-      if (t - lastFrameTime < frameInterval) { raf = requestAnimationFrame(loop); return; }
-      lastFrameTime = t;
-      if (pendingMouse.current) {
-        mousePos.current = pendingMouse.current; pendingMouse.current = null;
-        const mouseUniform = program.uniforms.uMouse.value;
-        mouseUniform[0] = mousePos.current.x; mouseUniform[1] = mousePos.current.y;
+
+    let disposed = false;
+    let lostTimer = 0;
+    let stop = null;
+
+    // Builds the whole scene on a fresh canvas. Returns its teardown, or null when this device can't run it.
+    const start = () => {
+      let renderer;
+      try {
+        // premultipliedAlpha: true to match the shader's output (see the comment there)
+        renderer = new Renderer({ webgl: 2, alpha: true, premultipliedAlpha: true, antialias: false, dpr: Math.min(window.devicePixelRatio || 1, maxDpr) });
+      } catch { return null; }
+      const gl = renderer.gl;
+      if (!gl) return null;
+      // ogl quietly falls back to WebGL1 when WebGL2 is missing (iOS 14 and older, Lockdown Mode, some in-app
+      // browsers). The shader is GLSL ES 3.00, so on WebGL1 it could never link.
+      if (!renderer.isWebgl2) { release(gl); return null; }
+      const canvas = gl.canvas;
+      canvas.style.display = 'block'; canvas.style.width = '100%'; canvas.style.height = '100%';
+      containerEl.appendChild(canvas);
+      const geometry = new Triangle(gl);
+      const program = new Program(gl, { vertex, fragment: buildFragment(iterations), uniforms: {
+        iTime: { value: 0 }, iResolution: { value: new Float32Array([1, 1]) },
+        uCustomColor: { value: new Float32Array(customColorRgb) }, uUseCustomColor: { value: color ? 1.0 : 0.0 },
+        uSpeed: { value: speed * 0.4 }, uDirection: { value: directionMultiplier }, uScale: { value: scale },
+        uOpacity: { value: opacity }, uMouse: { value: new Float32Array([0, 0]) },
+        uMouseInteractive: { value: mouseInteractive ? 1.0 : 0.0 }, uQuality: { value: iterations },
+        uStepScale: { value: ORIGINAL_QUALITY / iterations }, uLightMode: { value: lightMode ? 1 : 0 },
+      }});
+      if (!gl.getProgramParameter(program.program, gl.LINK_STATUS)) {
+        try { containerEl.removeChild(canvas); } catch {}
+        release(gl);
+        return null;
       }
-      const timeValue = (t - t0) * 0.001;
-      if (direction === 'pingpong') {
-        const duration = 10, segmentTime = timeValue % duration, forward = Math.floor(timeValue / duration) % 2 === 0;
-        const u = segmentTime / duration, smooth = u * u * (3 - 2 * u);
-        program.uniforms.uDirection.value = 1.0;
-        program.uniforms.iTime.value = forward ? smooth * duration : (1 - smooth) * duration;
-      } else program.uniforms.iTime.value = timeValue;
-      renderer.render({ scene: mesh }); raf = requestAnimationFrame(loop);
+      const mesh = new Mesh(gl, { geometry, program });
+      const handleMouseMove = e => {
+        if (!mouseInteractive) return;
+        const rect = containerEl.getBoundingClientRect();
+        pendingMouse.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      };
+      if (mouseInteractive) containerEl.addEventListener('mousemove', handleMouseMove, { passive: true });
+      const renderStaticFrame = () => { program.uniforms.iTime.value = 0; renderer.render({ scene: mesh }); };
+      let resizePending = false, lastW = 0, lastH = 0;
+      const setSize = () => {
+        const rect = containerEl.getBoundingClientRect();
+        const w = Math.max(1, Math.floor(rect.width * renderScale)), h = Math.max(1, Math.floor(rect.height * renderScale));
+        if (w === lastW && h === lastH) return; // resizing clears the canvas, so skip no-op resizes
+        lastW = w; lastH = h;
+        renderer.setSize(w, h);
+        canvas.style.width = '100%'; canvas.style.height = '100%';
+        const res = program.uniforms.iResolution.value;
+        res[0] = gl.drawingBufferWidth; res[1] = gl.drawingBufferHeight;
+        // a frozen frame has no loop to redraw it after the resize wiped the canvas
+        if (prefersReducedMotion) renderStaticFrame();
+      };
+      const ro = new ResizeObserver(() => {
+        if (resizePending) return;
+        resizePending = true;
+        requestAnimationFrame(() => { resizePending = false; setSize(); });
+      });
+      ro.observe(containerEl); setSize();
+      let raf = 0, contextLost = false, isVisible = true, tabVisible = document.visibilityState !== 'hidden';
+      const t0 = performance.now(), frameInterval = 1000 / targetFps;
+      let lastFrameTime = 0;
+      const loop = t => {
+        if (contextLost || !isVisible || !tabVisible) return;
+        if (t - lastFrameTime < frameInterval) { raf = requestAnimationFrame(loop); return; }
+        lastFrameTime = t;
+        if (pendingMouse.current) {
+          mousePos.current = pendingMouse.current; pendingMouse.current = null;
+          const mouseUniform = program.uniforms.uMouse.value;
+          mouseUniform[0] = mousePos.current.x; mouseUniform[1] = mousePos.current.y;
+        }
+        const timeValue = (t - t0) * 0.001;
+        if (direction === 'pingpong') {
+          const duration = 10, segmentTime = timeValue % duration, forward = Math.floor(timeValue / duration) % 2 === 0;
+          const u = segmentTime / duration, smooth = u * u * (3 - 2 * u);
+          program.uniforms.uDirection.value = 1.0;
+          program.uniforms.iTime.value = forward ? smooth * duration : (1 - smooth) * duration;
+        } else program.uniforms.iTime.value = timeValue;
+        renderer.render({ scene: mesh }); raf = requestAnimationFrame(loop);
+      };
+      // Waits for a lost context to come back, but only while the page is on screen (a backgrounded iOS
+      // tab is paused and its context comes back on return), then gives up and lets the parent fall back.
+      const armFallback = () => {
+        clearTimeout(lostTimer);
+        if (document.visibilityState !== 'visible') return;
+        lostTimer = setTimeout(() => { if (!disposed && document.visibilityState === 'visible') onUnsupported(); }, 5000);
+      };
+      const handleContextLost = e => { e.preventDefault(); contextLost = true; cancelAnimationFrame(raf); armFallback(); };
+      // A restored context has lost every buffer and program (ogl doesn't re-create them), so rebuild it all.
+      const handleContextRestored = () => {
+        clearTimeout(lostTimer);
+        if (disposed) return;
+        stop?.();
+        stop = start();
+        if (!stop) onUnsupported();
+      };
+      canvas.addEventListener('webglcontextlost', handleContextLost);
+      canvas.addEventListener('webglcontextrestored', handleContextRestored);
+      const io = new IntersectionObserver(([entry]) => {
+        const wasVisible = isVisible; isVisible = entry.isIntersecting;
+        if (isVisible && !wasVisible && !contextLost && tabVisible && !prefersReducedMotion) { cancelAnimationFrame(raf); raf = requestAnimationFrame(loop); }
+      }, { threshold: 0 });
+      io.observe(containerEl);
+      const handleVisibilityChange = () => {
+        tabVisible = document.visibilityState !== 'hidden';
+        if (tabVisible && contextLost) armFallback();
+        if (tabVisible && isVisible && !contextLost && !prefersReducedMotion) { cancelAnimationFrame(raf); lastFrameTime = 0; raf = requestAnimationFrame(loop); } else cancelAnimationFrame(raf);
+      };
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      if (prefersReducedMotion) renderStaticFrame(); else raf = requestAnimationFrame(loop);
+      return () => {
+        cancelAnimationFrame(raf); ro.disconnect(); io.disconnect(); document.removeEventListener('visibilitychange', handleVisibilityChange);
+        canvas.removeEventListener('webglcontextlost', handleContextLost); canvas.removeEventListener('webglcontextrestored', handleContextRestored);
+        if (mouseInteractive) containerEl.removeEventListener('mousemove', handleMouseMove);
+        try { containerEl.removeChild(canvas); } catch {}
+        release(gl);
+      };
     };
-    const handleContextLost = e => { e.preventDefault(); contextLost = true; cancelAnimationFrame(raf); };
-    const handleContextRestored = () => { contextLost = false; if (isVisible && tabVisible && !prefersReducedMotion) { cancelAnimationFrame(raf); raf = requestAnimationFrame(loop); } };
-    canvas.addEventListener('webglcontextlost', handleContextLost);
-    canvas.addEventListener('webglcontextrestored', handleContextRestored);
-    const io = new IntersectionObserver(([entry]) => {
-      const wasVisible = isVisible; isVisible = entry.isIntersecting;
-      if (isVisible && !wasVisible && !contextLost && tabVisible && !prefersReducedMotion) { cancelAnimationFrame(raf); raf = requestAnimationFrame(loop); }
-    }, { threshold: 0 });
-    io.observe(containerEl);
-    const handleVisibilityChange = () => {
-      tabVisible = document.visibilityState !== 'hidden';
-      if (tabVisible && isVisible && !contextLost && !prefersReducedMotion) { cancelAnimationFrame(raf); lastFrameTime = 0; raf = requestAnimationFrame(loop); } else cancelAnimationFrame(raf);
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    if (prefersReducedMotion) renderStaticFrame(); else raf = requestAnimationFrame(loop);
-    return () => {
-      cancelAnimationFrame(raf); ro.disconnect(); io.disconnect(); document.removeEventListener('visibilitychange', handleVisibilityChange);
-      canvas.removeEventListener('webglcontextlost', handleContextLost); canvas.removeEventListener('webglcontextrestored', handleContextRestored);
-      if (mouseInteractive && containerEl) containerEl.removeEventListener('mousemove', handleMouseMove);
-      try { containerEl?.removeChild(canvas); } catch {}
-    };
-  }, [color, speed, direction, scale, opacity, mouseInteractive, renderScale, maxDpr, targetFps, iterations, lightMode]);
+
+    stop = start();
+    if (!stop) { onUnsupported(); return; }
+    return () => { disposed = true; clearTimeout(lostTimer); stop?.(); };
+  }, [color, speed, direction, scale, opacity, mouseInteractive, renderScale, maxDpr, targetFps, iterations, lightMode, onUnsupported]);
   return <div ref={containerRef} className="plasma-container" />;
 };
 
