@@ -43,7 +43,7 @@ export function Profile() {
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
           custom={i}
-          className={cn("text-lg leading-relaxed text-foreground/85")}
+          className={cn("text-base leading-relaxed text-foreground/85")}
         >
           {text}
         </motion.p>
