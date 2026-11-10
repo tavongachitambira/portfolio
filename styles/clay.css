@@ -243,6 +243,15 @@
       var(--page);
   }
 
+  /* Stand-in for the WebGL flame (components/layout/ambient.tsx), shown only where WebGL2 cannot
+     run. Same hue and the same corners as the plasma, but still. */
+  .ember {
+    background:
+      radial-gradient(60% 38% at 82% 14%, color-mix(in oklab, #ff6b35 55%, transparent), transparent 72%),
+      radial-gradient(52% 34% at 8% 6%, color-mix(in oklab, #ff6b35 40%, transparent), transparent 72%),
+      radial-gradient(70% 34% at 62% 80%, color-mix(in oklab, #d9531e 30%, transparent), transparent 70%);
+  }
+
   /* ---------- bulbs and lamps: the status vocabulary ----------
      aqua = shipped (lit), amber = building (pulsing), violet = learning (unlit glass) */
   .bulb {
