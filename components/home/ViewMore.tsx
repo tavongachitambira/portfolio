@@ -13,7 +13,7 @@ export function ViewMore({ href, label }: { href: string; label: string }) {
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.8 }}
-      className="mt-8"
+      className="mt-8 flex justify-end"
     >
       <Link
         href={href}
