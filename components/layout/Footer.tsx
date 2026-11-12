@@ -156,7 +156,11 @@ export function Footer() {
         </div>
       </section>
 
-      <div className="flex flex-col gap-3 pt-8 text-xs text-muted-foreground lg:flex-row lg:items-center lg:justify-between">
+      {/* Was: className="flex flex-col gap-3 pt-8 text-xs text-muted-foreground lg:flex-row lg:items-center lg:justify-between"
+          On desktop this row is as tall as the social chips in the left aside (--ctl) with its text centred
+          in it, so at the end of the scroll it sits on the same line as that row (the scroller's end padding
+          is --row-bottom, measured from it). mt-8 replaces pt-8 so the minimum height is the row itself. */}
+      <div className="mt-8 flex flex-col gap-3 text-xs text-muted-foreground lg:min-h-(--ctl) lg:flex-row lg:items-center lg:justify-between">
         <p className="order-2 text-[11px] tracking-wide text-muted-foreground/70 lg:order-1">© 2026
         <span className="font-semibold pl-1">Tavonga Chitambira</span>
         . All rights reserved.</p>
