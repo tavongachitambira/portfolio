@@ -26,7 +26,12 @@ import { cn } from "@/lib/utils"
 
    On desktop the blocks live in a fixed layer that mirrors the in-flow slot (rootRef).
    Both the layer's box and the swing pivots are re-measured whenever the layout can have
-   changed, never cached from the first paint. */
+   changed, never cached from the first paint.
+
+   The slot is as tall as the scroller, which starts under the landing top bar, so the bar and the
+   blocks fill the first screen. A fixed layer is not clipped by the scroller's overflow, so it sits in a
+   viewport-sized wrapper that is cut at the scroller's top edge (clipTop): the blocks, like the text,
+   disappear under the bar instead of sliding over it. */
 
 const RADIUS = 36 // = --clay-r-lg
 const SECTION_ID = "profile"
@@ -58,6 +63,9 @@ export function HeroStage({
   const [end, setEnd] = useState(700)
   const [box, setBox] = useState<Box | null>(null)
   const [pivots, setPivots] = useState<Pivots | null>(null)
+  // viewport y of the scroller's top edge (right under the landing top bar). The fixed layer is not
+  // clipped by the scroller, so it is cut at this line itself: nothing scrolls up past the bar.
+  const [clipTop, setClipTop] = useState(0)
 
   useEffect(() => {
     const scroller = isMobile ? null : scrollContainerRef.current
@@ -83,6 +91,8 @@ export function HeroStage({
       } else {
         setBox(null)
       }
+      const nextClip = scroller ? Math.round(scroller.getBoundingClientRect().top) : 0
+      setClipTop((prev) => (prev === nextClip ? prev : nextClip))
 
       // swing pivot = the screw, in each pane's own coordinates. offset* values come from
       // layout, so they ignore the rotate/translate the panes are wearing mid-scroll.
@@ -143,38 +153,49 @@ export function HeroStage({
   const floating = !isMobile && box !== null
 
   return (
-    <div ref={rootRef} className="relative z-20 mx-auto w-full max-w-68 overflow-visible min-[420px]:max-sm:max-w-80 sm:max-md:max-w-92 md:max-lg:max-w-104 lg:max-w-(--stage-w) lg:max-xl:h-[clamp(620px,76vh,760px)] xl:h-[calc(100vh+2rem)] xl:max-h-none">
-      <motion.div
-        style={floating ? { left: box.left, top: box.top, width: box.width, height: box.height, y: layerY } : undefined}
-        className={cn(
-          "flex flex-col items-center justify-center",
-          floating ? "pointer-events-none fixed z-10" : "relative w-full py-8 md:py-12 lg:h-full lg:py-0",
-        )}
+    // Slot height, before the top bar: lg:max-xl:h-[clamp(620px,76vh,760px)] xl:h-[calc(100vh+2rem)] xl:max-h-none
+    // Now (desktop) the slot is exactly the scroller's height, i.e. the viewport minus the top bar, so the
+    // bar and the two blocks fill the first screen; --stage-w (globals.css, .landing) sizes the blocks to fit.
+    <div ref={rootRef} className="relative z-20 mx-auto w-full max-w-68 overflow-visible min-[420px]:max-sm:max-w-80 sm:max-md:max-w-92 md:max-lg:max-w-104 lg:h-full lg:max-w-(--stage-w)">
+      {/* Floating (desktop): a viewport-sized, click-through layer cut at the scroller's top edge, holding
+          the stage. `contents` otherwise, so the stage keeps its place in the flow and never remounts. */}
+      <div
+        className={floating ? "pointer-events-none fixed inset-0 z-10" : "contents"}
+        style={floating ? { clipPath: `inset(${clipTop}px 0 0 0)` } : undefined}
       >
-        <Pane pane={stagePanes.web} progress={progress} origin={pivots?.web} paneRef={webRef} />
+        <motion.div
+          style={floating ? { left: box.left, top: box.top, width: box.width, height: box.height, y: layerY } : undefined}
+          className={cn(
+            "flex flex-col items-center justify-center",
+            // was "pointer-events-none fixed z-10": the fixed + z-10 moved up to the clipping layer
+            floating ? "pointer-events-none absolute" : "relative w-full py-8 md:py-12 lg:h-full lg:py-0",
+          )}
+        >
+          <Pane pane={stagePanes.web} progress={progress} origin={pivots?.web} paneRef={webRef} />
 
-        {/* zero-height spacer sitting exactly on the seam between the blocks */}
-        <div ref={seamRef} aria-hidden className="relative z-20 h-0">
-          <div
-            ref={screwRef}
-            className="pointer-events-none absolute top-2.5 left-1/2 -translate-x-1/2 -translate-y-1/2"
-          >
-            <motion.div
-              style={{
-                rotate: screwRotate,
-                y: screwY,
-                opacity: screwOpacity,
-                transformOrigin: "center",
-                willChange: "transform",
-              }}
+          {/* zero-height spacer sitting exactly on the seam between the blocks */}
+          <div ref={seamRef} aria-hidden className="relative z-20 h-0">
+            <div
+              ref={screwRef}
+              className="pointer-events-none absolute top-2.5 left-1/2 -translate-x-1/2 -translate-y-1/2"
             >
-              <XOrb mode="multiply" className="clay-lg size-17" />
-            </motion.div>
+              <motion.div
+                style={{
+                  rotate: screwRotate,
+                  y: screwY,
+                  opacity: screwOpacity,
+                  transformOrigin: "center",
+                  willChange: "transform",
+                }}
+              >
+                <XOrb mode="multiply" className="clay-lg size-17" />
+              </motion.div>
+            </div>
           </div>
-        </div>
 
-        <Pane pane={stagePanes.ml} progress={progress} origin={pivots?.ml} paneRef={mlRef} />
-      </motion.div>
+          <Pane pane={stagePanes.ml} progress={progress} origin={pivots?.ml} paneRef={mlRef} />
+        </motion.div>
+      </div>
     </div>
   )
 }

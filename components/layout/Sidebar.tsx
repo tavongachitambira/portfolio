@@ -60,8 +60,9 @@ export function Sidebar({ asideRef, activeSection, onNavigate }: SidebarProps) {
   className="flex w-full flex-col justify-between gap-10 px-6 py-10 lg:sticky lg:top-0 lg:h-screen lg:w-1/3 lg:justify-center lg:gap-18 lg:px-6 lg:py-4 xl:w-2/5 xl:px-12"
 >
 
-      {/* Block 1: intro */}
-      <header className="flex flex-col gap-6 lg:gap-(--intro-gap)">
+      {/* Block 1: intro. data-row="first" / "last" are the anchors hooks/useRowAlign measures, so the
+          right column's top bar lines up with "Hi, my name is" and its footer with the social row. */}
+      <header data-row="first" className="flex flex-col gap-6 lg:gap-(--intro-gap)">
         <TypedText text="Hi, my name is" className="font-mono text-sm text-primary" />
 
         <motion.div {...reveal(1)}>
@@ -148,6 +149,7 @@ export function Sidebar({ asideRef, activeSection, onNavigate }: SidebarProps) {
 
       {/* Block 3: socials */}
       <motion.ul
+        data-row="last"
         variants={fadeIn}
         initial="hidden"
         animate="visible"

@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Plus_Jakarta_Sans, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { Ambient } from "@/components/layout/ambient";
 import { AssistProvider } from "@/components/assist/AssistProvider";
-import { AssistTriggers } from "@/components/assist/AssistTriggers";
+// import { AssistTriggers } from "@/components/assist/AssistTriggers"; // the dock is now rendered through AssistDock
+import { AssistDock } from "@/components/assist/AssistDock";
 import { isPublished, posts } from "@/lib/data/writing";
 import { site } from "@/lib/site";
 
@@ -56,7 +58,13 @@ export default function RootLayout({
           <AssistProvider>
             <Ambient />
             {children}
-            <AssistTriggers variant="dock" />
+            {/* Was rendered on every page:
+                <AssistTriggers variant="dock" />
+                The landing page now has Search/Ask in its own top bar (desktop) and section pill (phone),
+                so the corner dock only shows on the other pages. */}
+            <Suspense fallback={null}>
+              <AssistDock />
+            </Suspense>
           </AssistProvider>
         </ThemeProvider>
       </body>

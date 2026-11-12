@@ -140,6 +140,35 @@
   }
 }
 
+/* Landing page, desktop. The right column is [top bar] + [scroller]: the bar never scrolls, and the
+   scroller starts right under it, so whatever scrolls past that line is cut off and the background shows
+   through above it. The left aside is a block centred in the viewport, so where its first row
+   ("Hi, my name is") and last row (the socials) land depends on the viewport; hooks/useRowAlign measures
+   them into --hi-y / --row-bottom / --sb-w on <main class="landing"> and the rest derives from those.
+   The values below are the first-paint fallbacks. They are declared here, not on :root, because a
+   derived custom property is resolved where it is declared, so it must sit on the same element as the
+   measured values. */
+.landing {
+  --hi-y: 3.5rem; /* top of "Hi, my name is" */
+  --row-bottom: 3rem; /* space under the social row */
+  --sb-w: 0px; /* scrollbar width of the right column */
+
+  --bar-h: var(--ctl);
+  /* centred on the first row's 1.25rem line, and never closer than 0.75rem to the top */
+  --bar-y: max(0.75rem, calc(var(--hi-y) + 0.625rem - var(--bar-h) / 2));
+  /* everything above the scroller: the gap over the bar plus the bar itself */
+  --strip: calc(var(--bar-y) + var(--bar-h));
+}
+@media (min-width: 64rem) {
+  /* The stage fills what is left under the strip (was 100svh - 11.8rem, see "Desktop rhythm" above).
+     The width caps are raised from 28rem / 30rem to 32rem / 36rem so the blocks still fill the screen on
+     taller monitors instead of floating in extra air; on laptop heights the height term is what limits. */
+  .landing { --stage-w: min(32rem, calc((100svh - var(--strip) - 9.8rem) / 1.063)); }
+}
+@media (min-width: 80rem) {
+  .landing { --stage-w: min(36rem, calc((100svh - var(--strip) - 9.8rem) / 1.063)); }
+}
+
 @keyframes blink {
   to { visibility: hidden; }
 }

@@ -40,7 +40,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Features
 
-- **Command palette**: `⌘K` / `Ctrl+K`, or the small Search icon (with Ask beside it when that is on) pinned to the bottom-right corner. Jump to a section, page or case study, copy the email address, open the résumé. Needs no setup.
+- **Command palette**: `⌘K` / `Ctrl+K`, or the Search bar across the top of the landing page (with Ask beside it when that is on). On phones it is the icon pair at the right of the section pill, which appears once you scroll past the hero; the other pages keep a small icon pair in the bottom-right corner. Jump to a section, page or case study, copy the email address, open the résumé. Needs no setup.
 - **Case studies**: `/projects/<slug>`. The copy is in `lib/data/case-studies.ts` and the architecture diagram is laid out by `lib/diagram.ts`. Only a project with an entry there gets a page.
 - **Writing**: `/writing` is an index of links to posts that live elsewhere (Medium, a blog). A post counts as published once its `href` in `lib/data/writing.ts` is a real URL; until then it shows as "coming soon". `/feed.xml` lists published posts with links to the original URLs, and the feed is only advertised in `<head>` once there is one.
 - **Share images**: every page has an `opengraph-image` drawn at build time (fonts in `assets/fonts/`). The site origin comes from `site.url` in `lib/site.ts`, so set it to the production domain.
