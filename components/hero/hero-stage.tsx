@@ -28,10 +28,11 @@ import { cn } from "@/lib/utils"
    Both the layer's box and the swing pivots are re-measured whenever the layout can have
    changed, never cached from the first paint.
 
-   The slot is as tall as the scroller, which starts under the landing top bar, so the bar and the
-   blocks fill the first screen. A fixed layer is not clipped by the scroller's overflow, so it sits in a
-   viewport-sized wrapper that is cut at the scroller's top edge (clipTop): the blocks, like the text,
-   disappear under the bar instead of sliding over it. */
+   The slot is as tall as the scroller minus its top padding (the strip the landing top bar floats in), so
+   the bar and the blocks fill the first screen. A fixed layer is not clipped by the scroller's overflow, so
+   it sits in a viewport-sized wrapper that is cut at the scroller's top edge (clipTop). The bar floats over
+   the scroller now and content may pass behind it, so that edge is the top of the screen (clipTop is 0 and
+   nothing is cut); the cut stays so a layout that starts the scroller lower still behaves. */
 
 const RADIUS = 36 // = --clay-r-lg
 const SECTION_ID = "profile"
@@ -63,8 +64,9 @@ export function HeroStage({
   const [end, setEnd] = useState(700)
   const [box, setBox] = useState<Box | null>(null)
   const [pivots, setPivots] = useState<Pivots | null>(null)
-  // viewport y of the scroller's top edge (right under the landing top bar). The fixed layer is not
-  // clipped by the scroller, so it is cut at this line itself: nothing scrolls up past the bar.
+  // viewport y of the scroller's top edge. The fixed layer is not clipped by the scroller, so it is cut at
+  // this line itself. It is 0 now that the landing top bar floats over the scroller (it was the bar's height
+  // when the scroller started under the bar, and nothing scrolled up past the bar).
   const [clipTop, setClipTop] = useState(0)
 
   useEffect(() => {
@@ -78,8 +80,13 @@ export function HeroStage({
       // scroll distance over which the screw comes undone
       const section = document.getElementById(SECTION_ID)
       const base = scroller ? scroller.getBoundingClientRect().top : 0
-      const viewportHeight = scroller?.clientHeight ?? window.innerHeight
-      const top = section ? section.getBoundingClientRect().top - base + read() : viewportHeight
+      // Was: const viewportHeight = scroller?.clientHeight ?? window.innerHeight
+      //      const top = section ? section.getBoundingClientRect().top - base + read() : viewportHeight
+      // The scroller's top padding is the strip the top bar floats in, not scroll distance: measuring without
+      // it keeps the unscrewing exactly as long as it was when the scroller began under the bar.
+      const pad = scroller ? parseFloat(getComputedStyle(scroller).paddingTop) || 0 : 0
+      const viewportHeight = (scroller?.clientHeight ?? window.innerHeight) - pad
+      const top = section ? section.getBoundingClientRect().top - base + read() - pad : viewportHeight
       setEnd(Math.max(top - viewportHeight * 0.35, 200))
 
       // desktop: the layer is fixed, so it has to be told where the in-flow slot currently is
@@ -154,8 +161,9 @@ export function HeroStage({
 
   return (
     // Slot height, before the top bar: lg:max-xl:h-[clamp(620px,76vh,760px)] xl:h-[calc(100vh+2rem)] xl:max-h-none
-    // Now (desktop) the slot is exactly the scroller's height, i.e. the viewport minus the top bar, so the
-    // bar and the two blocks fill the first screen; --stage-w (globals.css, .landing) sizes the blocks to fit.
+    // Now (desktop) the slot is exactly the scroller's content height, i.e. the viewport minus the strip (the
+    // scroller's top padding), so the bar and the two blocks fill the first screen; --stage-w (globals.css,
+    // .landing) sizes the blocks to fit.
     <div ref={rootRef} className="relative z-20 mx-auto w-full max-w-68 overflow-visible min-[420px]:max-sm:max-w-80 sm:max-md:max-w-92 md:max-lg:max-w-104 lg:h-full lg:max-w-(--stage-w)">
       {/* Floating (desktop): a viewport-sized, click-through layer cut at the scroller's top edge, holding
           the stage. `contents` otherwise, so the stage keeps its place in the flow and never remounts. */}

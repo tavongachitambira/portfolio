@@ -140,9 +140,12 @@
   }
 }
 
-/* Landing page, desktop. The right column is [top bar] + [scroller]: the bar never scrolls, and the
-   scroller starts right under it, so whatever scrolls past that line is cut off and the background shows
-   through above it. The left aside is a block centred in the viewport, so where its first row
+/* Landing page, desktop. The right column is the scroller with the top bar floating over it: the bar is
+   out of the flow, the scroller fills the column, and the scroller's top padding (--strip) keeps the first
+   screen as [bar] + the two blocks. Content that scrolls up passes behind the bar and shows above it, and
+   the bar slides away while the column scrolls down and returns on the way up (hooks/useAutoHide). (It was
+   a strip above the scroller, and everything was cut at its bottom edge.) The left aside is a block
+   centred in the viewport, so where its first row
    ("Hi, my name is") and last row (the socials) land depends on the viewport; hooks/useRowAlign measures
    them into --hi-y / --row-bottom / --sb-w on <main class="landing"> and the rest derives from those.
    The values below are the first-paint fallbacks. They are declared here, not on :root, because a
@@ -153,7 +156,13 @@
   --row-bottom: 3rem; /* space under the social row */
   --sb-w: 0px; /* scrollbar width of the right column */
 
-  --bar-h: var(--ctl);
+  /* Vertical padding inside the top bar: THE line to change to make the bar slimmer or chunkier (it was
+     0.25rem, 4px). The controls inside keep their size (--ctl minus 0.5rem), so the bar's height, the gap
+     above it, --strip and the stage width all follow, and the bar stays centred on "Hi, my name is". */
+  --bar-py: 0.125rem;
+  --bar-px: 0.125rem; /* the same at its two ends, so the left end matches the right and the rim is even all round */
+  /* was: --bar-h: var(--ctl); */
+  --bar-h: calc(var(--ctl) - 0.5rem + var(--bar-py) * 2);
   /* centred on the first row's 1.25rem line, and never closer than 0.75rem to the top */
   --bar-y: max(0.75rem, calc(var(--hi-y) + 0.625rem - var(--bar-h) / 2));
   /* everything above the scroller: the gap over the bar plus the bar itself */

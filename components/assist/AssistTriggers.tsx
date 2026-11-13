@@ -17,24 +17,31 @@ const segment = cn(
   focus,
   press,
 )
-// the bare icon button used inside another bar (the phone's section pill)
-const bare = cn(
-  "grid size-8 place-items-center rounded-full text-foreground/70 hover:bg-foreground/10 hover:text-foreground",
-  focus,
-  press,
-)
+// Was: the bare icon button used by the dock and by the pair in the phone's section pill. Both are clay now (puff).
+// const bare = cn(
+//   "grid size-8 place-items-center rounded-full text-foreground/70 hover:bg-foreground/10 hover:text-foreground",
+//   focus,
+//   press,
+// )
+
+// The icon button of the dock and of the phone's pair: puffy clay, with its own hover lift and press (styles/clay.css).
+// Add `clay-flat` for the quiet kind that only rises when you reach for it, `clay-glaze` for the glowing one.
+const puff = cn("clay clay-btn grid size-9 shrink-0 place-items-center rounded-full", focus)
+// The line between Search and Ask: a groove cut into the clay (a tiny well), not a drawn rule.
+const groove = "clay-well mx-1 h-5 w-[3px] shrink-0 [--clay-radius:999px] [--clay-elev:var(--e-well-sm)]"
 
 /* The always-visible way in: ⌘K search and, when it is switched on, Ask.
 
    "bar" is a frosted-glass pill that sits in the flow, never over content. It spells out its
    labels only when the row it sits in is wide enough for them (a container query, so the
-   parent row must be an `@container`); narrower, it shrinks to two icons. "icons" is the same
-   pair without the glass, for use inside a bar that already exists.
+   parent row must be an `@container`); narrower, it shrinks to two icons.
 
    "topbar" is the landing page's clay bar across the top of the right column (desktop): it fills the
-   width its parent gives it and is as tall as --bar-h. "icons" now lives in the phone's section pill
-   (components/layout/MobileNav). "dock" is the corner pill the inner pages still use
-   (components/assist/AssistDock hides it on the landing page). */
+   width its parent gives it and is as tall as --bar-h (its vertical padding is --bar-py, in globals.css).
+   "icons" lives in the phone's section pill (components/layout/MobileNav): Search, a groove, and Ask as
+   the one glowing button. "dock" is the corner pill the inner pages use (components/assist/AssistDock
+   hides it on the landing page): a raised clay pill with the same two buttons and the groove between
+   them. */
 export function AssistTriggers({
   className,
   variant = "bar",
@@ -72,7 +79,12 @@ export function AssistTriggers({
       <div
         role="group"
         aria-label="Search and ask"
-        className={cn("clay clay-sm flex h-(--bar-h) items-center gap-1.5 p-1 [--clay-radius:999px]", className)}
+        // Was: "clay clay-sm flex h-(--bar-h) items-center gap-1.5 p-1 [--clay-radius:999px]". The padding now comes from
+        // --bar-py / --bar-px (globals.css, .landing), so one line there slims or fattens the bar.
+        className={cn(
+          "clay clay-sm flex h-(--bar-h) items-center gap-1.5 px-[var(--bar-px,0.125rem)] py-[var(--bar-py,0.125rem)] [--clay-radius:999px]",
+          className,
+        )}
       >
         <button
           {...search}
@@ -109,41 +121,53 @@ export function AssistTriggers({
   }
 
   if (variant === "dock") {
-    // a small corner dock: icons only, fixed to the bottom-right on every screen size. Quiet glass so it
-    // sits with the page, with the sparkle in the accent colour so it still reads as "something to try".
+    // A small corner dock: icons only, fixed to the bottom-right on every screen size. A raised clay pill
+    // holding two puffy buttons with a groove between them; the sparkle stays in the accent colour so it
+    // still reads as "something to try".
+    // Was (quiet frosted glass, bare icons): className "fixed right-[max(1rem,env(safe-area-inset-right))] bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 flex items-center gap-0.5 rounded-full border border-foreground/10 bg-background/70 p-1 backdrop-blur-md shadow-[0_6px_20px_-10px_rgb(0_0_0/0.55)]",
+    // its buttons were `bare` (size-9, hover:bg-foreground/10) and there was no line between them.
     return (
       <div
         role="group"
         aria-label="Search and ask"
         className={cn(
-          "fixed right-[max(1rem,env(safe-area-inset-right))] bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 flex items-center gap-0.5 rounded-full border border-foreground/10 bg-background/70 p-1",
-          "backdrop-blur-md shadow-[0_6px_20px_-10px_rgb(0_0_0/0.55)]",
+          "clay clay-sm fixed right-[max(1rem,env(safe-area-inset-right))] bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 flex items-center p-1 [--clay-radius:999px]",
           className,
         )}
       >
-        <button {...search} className={cn(bare, "size-9 text-foreground/65")}>
+        <button {...search} className={cn(puff, "text-foreground/70 hover:text-foreground")}>
           <Search className="size-[18px]" aria-hidden />
         </button>
         {askEnabled && (
-          <button {...ask} className={cn(bare, "size-9")}>
-            <Sparkles className="size-[18px] text-primary" aria-hidden />
-          </button>
+          <>
+            <span aria-hidden className={groove} />
+            <button {...ask} className={puff}>
+              <Sparkles className="size-[18px] text-primary" aria-hidden />
+            </button>
+          </>
         )}
       </div>
     )
   }
 
   if (variant === "icons") {
-    // size-9 (was size-8 via `bare`): a bigger tap target now that this sits in the phone's section pill
+    // The pair at the right of the phone's section pill: the same pieces as the dock, with a groove between
+    // them, but Ask is the one glowing button, glazed like "Explore my work" (the default Button is
+    // clay + clay-glaze + clay-btn + text-on-glaze, and so is this).
+    // Was (bare icons, size-9 tap targets, no line between them, the sparkle in text-primary):
+    // <div className="flex items-center gap-0.5"> <button className={cn(bare, "size-9")}> ... </button> </div>
     return (
-      <div role="group" aria-label="Search and ask" className={cn("flex items-center gap-0.5", className)}>
-        <button {...search} className={cn(bare, "size-9")}>
+      <div role="group" aria-label="Search and ask" className={cn("flex items-center", className)}>
+        <button {...search} className={cn(puff, "text-foreground/70 hover:text-foreground")}>
           <Search className="size-4" aria-hidden />
         </button>
         {askEnabled && (
-          <button {...ask} className={cn(bare, "size-9")}>
-            <Sparkles className="size-4 text-primary" aria-hidden />
-          </button>
+          <>
+            <span aria-hidden className={groove} />
+            <button {...ask} className={cn(puff, "clay-glaze text-on-glaze")}>
+              <Sparkles className="size-4" aria-hidden />
+            </button>
+          </>
         )}
       </div>
     )
