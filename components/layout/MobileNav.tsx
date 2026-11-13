@@ -39,7 +39,9 @@ export function MobileNav({
           transition={{ duration: 0.2 }}
           // Was: "clay clay-sm fixed top-3 right-4 left-4 z-50 flex h-11 items-center overflow-hidden px-5 lg:hidden"
           // Search and Ask now sit at the right end of the pill; pr-1 keeps the last round button concentric with the pill's end.
-          className="clay clay-sm fixed top-3 right-4 left-4 z-50 flex h-11 items-center gap-2 overflow-hidden pr-1 pl-5 lg:hidden"
+          // Was (before Ask got its glow): "clay clay-sm fixed top-3 right-4 left-4 z-50 flex h-11 items-center gap-2 overflow-hidden pr-1 pl-5 lg:hidden".
+          // overflow-hidden is gone so the glow can spill past the pill the way "Explore my work"'s does; the label truncates itself.
+          className="clay clay-sm fixed top-3 right-4 left-4 z-50 flex h-11 items-center gap-2 pr-1 pl-5 lg:hidden"
         >
           <AnimatePresence mode="wait">
             <motion.span

@@ -15,9 +15,11 @@ import { InitialLoader } from "@/components/layout/InitialLoader"
 import { MobileNav } from "@/components/layout/MobileNav"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { useActiveSection } from "@/hooks/useActiveSection"
+import { useAutoHide } from "@/hooks/useAutoHide"
 import { useIsMobile } from "@/hooks/useIsMobile"
 import { useRowAlign } from "@/hooks/useRowAlign"
 import { useWheelForward } from "@/hooks/useWheelForward"
+import { announceJump } from "@/lib/autohide"
 import { labelOf, sectionIds } from "@/lib/data/nav"
 import { previewPosts } from "@/lib/data/writing"
 
@@ -34,6 +36,8 @@ export default function Home() {
   useWheelForward(barRef, rightRef, !isMobile)
   // lines the top bar up with "Hi, my name is" and the footer's last row with the social row
   useRowAlign(mainRef, leftRef, rightRef, !isMobile)
+  // the top bar slides away while the column scrolls down and comes back when it scrolls up
+  useAutoHide(rightRef, barRef, !isMobile)
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault()
@@ -44,6 +48,9 @@ export default function Home() {
       const top = el.getBoundingClientRect().top + window.scrollY - 48 - 20
       window.scrollTo({ top, behavior: "smooth" })
     } else {
+      // a jump keeps the top bar out of the way until the page has settled; without this it would slide in
+      // over the heading we are scrolling up to (hooks/useAutoHide)
+      announceJump()
       // offsetTop is measured from the scroller itself (it is `relative`, see below)
       rightRef.current?.scrollTo({ top: el.offsetTop - 20, behavior: "smooth" })
     }
@@ -64,22 +71,29 @@ export default function Home() {
           {/* Desktop top bar: Search + Ask, as wide as the text column (the paddings below are the
               scroller's plus the content's: lg 24+24, xl 40+24 left and 48+24 right; --sb-w adds the
               scrollbar). Its height is --strip: the gap above it, which lines it up with "Hi, my name is",
-              plus the bar. It sits outside the scroller, so it stays put, and whatever scrolls past it is
-              cut at the scroller's top edge; the background shows through around it. On a phone the
-              same two buttons sit in MobileNav's pill instead (shown once the hero has scrolled away). */}
+              plus the bar. It floats over the scroller (absolute), so content can pass behind it, and it
+              slides away while the column scrolls down and returns on the way up: hooks/useAutoHide sets
+              data-hidden, and focus inside it keeps it in view. pointer-events-none lets the gaps around the
+              bar scroll the column; the bar switches them back on. On a phone the same two buttons sit in
+              MobileNav's pill instead (shown once the hero has scrolled away).
+              Was, an in-flow strip above the scroller that cut everything at its bottom edge:
+              className="relative z-30 hidden shrink-0 lg:block lg:h-(--strip) lg:pt-(--bar-y) lg:pr-[calc(3rem+var(--sb-w))] lg:pl-12 xl:pr-[calc(4.5rem+var(--sb-w))] xl:pl-16" */}
           <div
             ref={barRef}
-            className="relative z-30 hidden shrink-0 lg:block lg:h-(--strip) lg:pt-(--bar-y) lg:pr-[calc(3rem+var(--sb-w))] lg:pl-12 xl:pr-[calc(4.5rem+var(--sb-w))] xl:pl-16"
+            className="pointer-events-none absolute inset-x-0 top-0 z-30 hidden transition-[translate,opacity] duration-300 ease-out motion-reduce:transition-none lg:block lg:h-(--strip) lg:pt-(--bar-y) lg:pr-[calc(3rem+var(--sb-w))] lg:pl-12 xl:pr-[calc(4.5rem+var(--sb-w))] xl:pl-16 data-hidden:not-focus-within:-translate-y-[calc(100%+1.5rem)] data-hidden:not-focus-within:opacity-0"
           >
-            <AssistTriggers variant="topbar" />
+            <AssistTriggers variant="topbar" className="pointer-events-auto" />
           </div>
 
           {/* Was: <div ref={rightRef} className="scrollbar-clay w-full overflow-x-hidden overflow-y-auto pb-10 lg:h-screen lg:pr-6 lg:pb-8 lg:pl-6 xl:pr-12 xl:pb-12 xl:pl-10">
-              Desktop: it fills what is left under the bar (flex-1 instead of h-screen), and the end padding
-              moved to the content below (--row-bottom), so the hero slot can be exactly this tall. */}
+              Desktop: it fills the whole column (flex-1 instead of h-screen) and its top padding is the strip the
+              bar floats in, so the first screen is [bar] + the blocks while content can scroll up behind the bar.
+              The end padding moved to the content below (--row-bottom), so the hero slot can be exactly
+              (column - strip) tall.
+              Was, when the bar sat above it and it started under the bar (no top padding): "scrollbar-clay relative w-full overflow-x-hidden overflow-y-auto pb-10 lg:min-h-0 lg:flex-1 lg:pr-6 lg:pb-0 lg:pl-6 xl:pr-12 xl:pb-0 xl:pl-10" */}
           <div
             ref={rightRef}
-            className="scrollbar-clay relative w-full overflow-x-hidden overflow-y-auto pb-10 lg:min-h-0 lg:flex-1 lg:pr-6 lg:pb-0 lg:pl-6 xl:pr-12 xl:pb-0 xl:pl-10"
+            className="scrollbar-clay relative w-full overflow-x-hidden overflow-y-auto pb-10 lg:min-h-0 lg:flex-1 lg:pt-(--strip) lg:pr-6 lg:pb-0 lg:pl-6 xl:pr-12 xl:pb-0 xl:pl-10"
           >
             <HeroStage scrollContainerRef={rightRef} isMobile={isMobile} />
 

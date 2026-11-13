@@ -23,6 +23,7 @@ import type { IconType } from "react-icons"
 
 import { useAssist } from "@/components/assist/AssistProvider"
 import { useReturnFocus } from "@/components/assist/useReturnFocus"
+import { announceJump } from "@/lib/autohide"
 import { copyText } from "@/lib/clipboard"
 import { buildCommands, groupCommands, searchCommands, type Command, type CommandAction } from "@/lib/palette"
 import { site } from "@/lib/site"
@@ -54,6 +55,8 @@ function goToSection(id: string, push: (href: string) => void) {
   const el = visibleById(id)
   if (window.location.pathname === "/" && el) {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    // the landing top bar keeps out of the way until the jump has settled (hooks/useAutoHide)
+    announceJump()
     // every section carries a scroll-margin, so this lands exactly where the nav links do
     el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" })
   } else {
